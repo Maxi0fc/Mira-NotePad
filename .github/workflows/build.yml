@@ -1,0 +1,27 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '6.0.x'
+
+      - name: Build
+        run: dotnet build NotePadMod/NotePadMod.csproj --configuration Release
+
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: NotePadMod/bin/Release/net6.0/NotePadMod.dll

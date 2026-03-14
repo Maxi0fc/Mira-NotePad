@@ -1,0 +1,12 @@
+C:\Users\adama\OneDrive\Skrivbord\PROJEKT\NOTEPAD\NotePadMod\obj\Release\net6.0\NotePadMod.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\adama\OneDrive\Skrivbord\PROJEKT\NOTEPAD\NotePadMod\obj\Release\net6.0\NotePadMod.AssemblyInfoInputs.cache
+C:\Users\adama\OneDrive\Skrivbord\PROJEKT\NOTEPAD\NotePadMod\obj\Release\net6.0\NotePadMod.AssemblyInfo.cs
+C:\Users\adama\OneDrive\Skrivbord\PROJEKT\NOTEPAD\NotePadMod\obj\Release\net6.0\NotePadMod.csproj.CoreCompileInputs.cache
+C:\Users\adama\OneDrive\Skrivbord\PROJEKT\NOTEPAD\NotePadMod\obj\Release\net6.0\NotePadMod.csproj.AssemblyReference.cache
+C:\Users\adama\OneDrive\Skrivbord\PROJEKT\NOTEPAD\NotePadMod\bin\Release\net6.0\NotePadMod.deps.json
+C:\Users\adama\OneDrive\Skrivbord\PROJEKT\NOTEPAD\NotePadMod\bin\Release\net6.0\NotePadMod.dll
+C:\Users\adama\OneDrive\Skrivbord\PROJEKT\NOTEPAD\NotePadMod\bin\Release\net6.0\NotePadMod.pdb
+C:\Users\adama\OneDrive\Skrivbord\PROJEKT\NOTEPAD\NotePadMod\obj\Release\net6.0\NotePadMod.dll
+C:\Users\adama\OneDrive\Skrivbord\PROJEKT\NOTEPAD\NotePadMod\obj\Release\net6.0\refint\NotePadMod.dll
+C:\Users\adama\OneDrive\Skrivbord\PROJEKT\NOTEPAD\NotePadMod\obj\Release\net6.0\NotePadMod.pdb
+C:\Users\adama\OneDrive\Skrivbord\PROJEKT\NOTEPAD\NotePadMod\obj\Release\net6.0\ref\NotePadMod.dll
