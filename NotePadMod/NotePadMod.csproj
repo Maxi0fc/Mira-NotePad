@@ -8,10 +8,13 @@
     <NoWarn>$(NoWarn);CS0436;CS0618</NoWarn>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
-  <PropertyGroup>
+
+  <PropertyGroup Condition="'$(GITHUB_ACTIONS)' != 'true'">
     <AmongUsDir>C:\Users\adama\OneDrive\Skrivbord\1.5.2</AmongUsDir>
   </PropertyGroup>
-  <ItemGroup>
+
+  <!-- Lokala referenser -->
+  <ItemGroup Condition="'$(GITHUB_ACTIONS)' != 'true'">
     <Reference Include="BepInEx.Core">
       <HintPath>$(AmongUsDir)\BepInEx\core\BepInEx.Core.dll</HintPath>
       <Private>false</Private>
@@ -81,6 +84,79 @@
       <Private>false</Private>
     </Reference>
   </ItemGroup>
+
+  <!-- GitHub Actions referenser -->
+  <ItemGroup Condition="'$(GITHUB_ACTIONS)' == 'true'">
+    <Reference Include="BepInEx.Core">
+      <HintPath>../libs/BepInEx.Core.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="BepInEx.Unity.IL2CPP">
+      <HintPath>../libs/BepInEx.Unity.IL2CPP.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="BepInEx.Unity.Common">
+      <HintPath>../libs/BepInEx.Unity.Common.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Il2CppInterop.Runtime">
+      <HintPath>../libs/Il2CppInterop.Runtime.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="0Harmony">
+      <HintPath>../libs/0Harmony.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Reactor">
+      <HintPath>../libs/Reactor.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="MiraAPI">
+      <HintPath>../libs/MiraAPI.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="TownOfUsMira">
+      <HintPath>../libs/TownOfUsMira.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Il2Cppmscorlib">
+      <HintPath>../libs/Il2Cppmscorlib.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Assembly-CSharp">
+      <HintPath>../libs/Assembly-CSharp.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.CoreModule">
+      <HintPath>../libs/UnityEngine.CoreModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.UI">
+      <HintPath>../libs/UnityEngine.UI.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Unity.TextMeshPro">
+      <HintPath>../libs/Unity.TextMeshPro.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.InputLegacyModule">
+      <HintPath>../libs/UnityEngine.InputLegacyModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.Physics2DModule">
+      <HintPath>../libs/UnityEngine.Physics2DModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.UIModule">
+      <HintPath>../libs/UnityEngine.UIModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.ImageConversionModule">
+      <HintPath>../libs/UnityEngine.ImageConversionModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
   <ItemGroup>
     <EmbeddedResource Include="Resources\notepad_inactive.png" />
     <EmbeddedResource Include="Resources\notepad_active.png" />
@@ -89,7 +165,8 @@
     <EmbeddedResource Include="Resources\notepad_clear.png" />
     <EmbeddedResource Include="Resources\notepad_clear_hover.png" />
   </ItemGroup>
-  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent" Condition="'$(GITHUB_ACTIONS)' != 'true'">
     <MakeDir Directories="$(AmongUsDir)\BepInEx\plugins\" />
     <Copy
       SourceFiles="$(OutputPath)$(AssemblyName).dll"
