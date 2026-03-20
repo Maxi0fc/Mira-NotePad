@@ -27,9 +27,9 @@ public class NotePadWindow(nint ptr) : MonoBehaviour(ptr)
     private const float WindowZ = -50f;
     private const float TextX = -1.8f;
     private const float TextY = 1f;
-    // Viewport-position (0-1) som matchar originalplaceringen på 1920x1080
-    private const float ViewportX = 0.15f;
-    private const float ViewportY = 0.65f;
+    // Offset från knappens position till fönstrets centrum
+    private const float WindowOffsetX = -1.5f;
+    private const float WindowOffsetY = 1.2f;
     // ---------------------
     // BepInEx config — text color
     public static ConfigEntry<bool>? ColorBlack;
@@ -79,13 +79,14 @@ public class NotePadWindow(nint ptr) : MonoBehaviour(ptr)
     }
     private static Vector3 GetWindowPosition()
     {
-        var cam = Camera.main;
-        if (cam == null) return new Vector3(0.4f, 1.5f, WindowZ);
+        var btn = NotePadMod.Patches.HudManagerPatch.NotePadButtonObj;
         var parent = HudManager.Instance.Chat.transform.parent;
-        Vector3 worldPos = cam.ViewportToWorldPoint(new Vector3(ViewportX, ViewportY, 10f));
-        Vector3 localPos = parent.InverseTransformPoint(worldPos);
-        localPos.z = WindowZ;
-        return localPos;
+        if (btn != null)
+        {
+            Vector3 btnLocal = parent.InverseTransformPoint(btn.transform.position);
+            return new Vector3(btnLocal.x + WindowOffsetX, btnLocal.y + WindowOffsetY, WindowZ);
+        }
+        return new Vector3(0.4f, 1.5f, WindowZ);
     }
     public static void Open()
     {
