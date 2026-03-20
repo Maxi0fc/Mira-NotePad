@@ -1,27 +1,25 @@
-name: Build and Release
-
+name: CI
 on:
   push:
-    tags:
-      - main
-
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
-
-      - name: Setup .NET
+      - name: Setup .NET 6
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '6.0.x'
-
+      - name: Restore NuGet packages
+        run: dotnet restore NotePadMod/NotePadMod.csproj
       - name: Build
-        run: dotnet build NotePadMod/NotePadMod.csproj --configuration Release
-
-      - name: Release
-        uses: softprops/action-gh-release@v2
+        run: dotnet build NotePadMod/NotePadMod.csproj --configuration Release --no-restore
+      - name: Upload DLL as artifact
+        uses: actions/upload-artifact@v4
         with:
-          files: NotePadMod/bin/Release/net6.0/NotePadMod.dll
+          name: NotePadMod
+          path: NotePadMod/bin/Release/net6.0/NotePadMod.dll
