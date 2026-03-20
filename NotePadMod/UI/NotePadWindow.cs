@@ -29,7 +29,7 @@ public class NotePadWindow(nint ptr) : MonoBehaviour(ptr)
     private const float TextY = 1f;
     // Offset från knappens position till fönstrets centrum
     private const float WindowOffsetX = -1.5f;
-    private const float WindowOffsetY = 2.0f;
+    private const float WindowOffsetY = 0.5f;
     // ---------------------
     // BepInEx config — text color
     public static ConfigEntry<bool>? ColorBlack;
@@ -340,7 +340,7 @@ public class NotePadWindow(nint ptr) : MonoBehaviour(ptr)
             var btnGo = new GameObject("ClearButton");
             btnGo.transform.SetParent(transform, false);
             btnGo.transform.localPosition = new Vector3(0.6f, -1.5f, -0.2f);
-            btnGo.transform.localScale = new Vector3(0.44f, 0.44f, 1f);
+            btnGo.transform.localScale = new Vector3(0.24f, 0.24f, 1f);
             btnGo.layer = 5;
             var sr = btnGo.AddComponent<SpriteRenderer>();
             sr.sprite = clearSprite;

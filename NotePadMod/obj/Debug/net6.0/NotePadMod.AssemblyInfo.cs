@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("NotePadMod")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+8120b3000322c40839b400781d9dc6a03401b06e")]
 [assembly: System.Reflection.AssemblyProductAttribute("NotePadMod")]
 [assembly: System.Reflection.AssemblyTitleAttribute("NotePadMod")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

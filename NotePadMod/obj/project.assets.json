@@ -14,11 +14,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\adama\\OneDrive\\Skrivbord\\PROJEKT\\NOTEPAD\\NotePadMod\\NotePadMod.csproj",
+      "projectUniqueName": "C:\\Users\\adama\\OneDrive\\Dokument\\GitHub\\Mira-NotePad\\NotePadMod\\NotePadMod.csproj",
       "projectName": "NotePadMod",
-      "projectPath": "C:\\Users\\adama\\OneDrive\\Skrivbord\\PROJEKT\\NOTEPAD\\NotePadMod\\NotePadMod.csproj",
+      "projectPath": "C:\\Users\\adama\\OneDrive\\Dokument\\GitHub\\Mira-NotePad\\NotePadMod\\NotePadMod.csproj",
       "packagesPath": "C:\\Users\\adama\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\adama\\OneDrive\\Skrivbord\\PROJEKT\\NOTEPAD\\NotePadMod\\obj\\",
+      "outputPath": "C:\\Users\\adama\\OneDrive\\Dokument\\GitHub\\Mira-NotePad\\NotePadMod\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
