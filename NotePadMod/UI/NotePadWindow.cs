@@ -29,7 +29,7 @@ public class NotePadWindow(nint ptr) : MonoBehaviour(ptr)
     private const float TextY = 1f;
     // Offset från knappens position till fönstrets centrum
     private const float WindowOffsetX = -1.5f;
-    private const float WindowOffsetY = 0.5f;
+    private const float WindowOffsetY = -1.5f;
     // ---------------------
     // BepInEx config — text color
     public static ConfigEntry<bool>? ColorBlack;
