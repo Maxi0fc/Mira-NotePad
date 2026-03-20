@@ -29,7 +29,7 @@ public class NotePadWindow(nint ptr) : MonoBehaviour(ptr)
     private const float TextY = 1f;
     // Offset från knappens position till fönstrets centrum
     private const float WindowOffsetX = -1.5f;
-    private const float WindowOffsetY = -1.0f;
+    private const float WindowOffsetY = 1.2f;
     // ---------------------
     // BepInEx config — text color
     public static ConfigEntry<bool>? ColorBlack;
@@ -288,10 +288,33 @@ public class NotePadWindow(nint ptr) : MonoBehaviour(ptr)
     private void UpdateDisplay()
     {
         if (_displayTmp == null) return;
-        string display = _content;
+        string display = RoleColorizer.Apply(_content);
         if (_focused && _cursorVisible)
-            display = display.Insert(Mathf.Clamp(_cursorPos, 0, display.Length), "|");
+        {
+            int taggedCursorPos = MapCursorToTaggedString(_content, display, _cursorPos);
+            display = display.Insert(taggedCursorPos, "|");
+        }
         _displayTmp.text = display;
+    }
+    private static int MapCursorToTaggedString(string plain, string tagged, int cursorInPlain)
+    {
+        int p = 0;
+        int t = 0;
+        while (p < cursorInPlain && t < tagged.Length)
+        {
+            if (tagged[t] == '<')
+            {
+                int close = tagged.IndexOf('>', t);
+                t = close >= 0 ? close + 1 : tagged.Length;
+            }
+            else { p++; t++; }
+        }
+        while (t < tagged.Length && tagged[t] == '<')
+        {
+            int close = tagged.IndexOf('>', t);
+            t = close >= 0 ? close + 1 : tagged.Length;
+        }
+        return t;
     }
     private void Start()
     {
@@ -340,13 +363,13 @@ public class NotePadWindow(nint ptr) : MonoBehaviour(ptr)
             var btnGo = new GameObject("ClearButton");
             btnGo.transform.SetParent(transform, false);
             btnGo.transform.localPosition = new Vector3(0.6f, -1.5f, -0.2f);
-            btnGo.transform.localScale = new Vector3(0.24f, 0.24f, 1f);
+            btnGo.transform.localScale = new Vector3(0.44f, 0.44f, 1f);
             btnGo.layer = 5;
             var sr = btnGo.AddComponent<SpriteRenderer>();
             sr.sprite = clearSprite;
             sr.sortingOrder = 1002;
             var bcol = btnGo.AddComponent<BoxCollider2D>();
-            bcol.size = new Vector2(1.5f, 0.5f);
+            bcol.size = new Vector2(3.0f, 1.0f);
             var bpb = btnGo.AddComponent<PassiveButton>();
             bpb.OnClick = new Button.ButtonClickedEvent();
             bpb.OnMouseOver = new UnityEvent();
