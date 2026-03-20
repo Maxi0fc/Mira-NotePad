@@ -5,9 +5,7 @@ using UnityEngine.Events;
 using UnityEngine.UI;
 using TMPro;
 using BepInEx.Configuration;
-
 namespace NotePadMod.UI;
-
 [RegisterInIl2Cpp]
 public class NotePadWindow(nint ptr) : MonoBehaviour(ptr)
 {
@@ -25,13 +23,15 @@ public class NotePadWindow(nint ptr) : MonoBehaviour(ptr)
     private const float HoldDelay = 0.4f;
     private const float HoldRepeat = 0.05f;
     private const int MaxLines = 13;
-
-    private const float WindowX = 0.4f;
-    private const float WindowY = 1.5f;
+    // --- Positionering ---
     private const float WindowZ = -50f;
     private const float TextX = -1.8f;
     private const float TextY = 1f;
-
+    // Viewport-position (0-1) som matchar originalplaceringen på 1920x1080
+    private const float ViewportX = 0.15f;
+    private const float ViewportY = 0.65f;
+    // ---------------------
+    // BepInEx config — text color
     public static ConfigEntry<bool>? ColorBlack;
     public static ConfigEntry<bool>? ColorWhite;
     public static ConfigEntry<bool>? ColorRed;
@@ -39,9 +39,9 @@ public class NotePadWindow(nint ptr) : MonoBehaviour(ptr)
     public static ConfigEntry<bool>? ColorGreen;
     public static ConfigEntry<bool>? ColorCyan;
     public static ConfigEntry<bool>? ColorGrey;
+    // BepInEx config — window skin
     public static ConfigEntry<bool>? WindowGrey;
     public static ConfigEntry<bool>? WindowBlack;
-
     public static void InitConfig(ConfigFile config)
     {
         ColorBlack  = config.Bind("TextColor", "Black",  true,  "Use black text");
@@ -54,7 +54,6 @@ public class NotePadWindow(nint ptr) : MonoBehaviour(ptr)
         WindowGrey  = config.Bind("WindowSkin", "Grey",  true,  "Use grey notepad window (notepad_window.png)");
         WindowBlack = config.Bind("WindowSkin", "Black", false, "Use black notepad window (notepad_window_black.png)");
     }
-
     private static Color GetTextColor()
     {
         if (ColorWhite?.Value  == true) return Color.white;
@@ -65,15 +64,12 @@ public class NotePadWindow(nint ptr) : MonoBehaviour(ptr)
         if (ColorGrey?.Value   == true) return Color.grey;
         return Color.black;
     }
-
     private static string GetWindowSpriteName()
     {
         if (WindowBlack?.Value == true) return "NotePadMod.Resources.notepad_window_black.png";
         return "NotePadMod.Resources.notepad_window.png";
     }
-
     public static bool IsOpen => _instance != null && _instance.gameObject.activeSelf;
-
     public static void Toggle()
     {
         if (IsOpen) { Close(); return; }
@@ -81,27 +77,34 @@ public class NotePadWindow(nint ptr) : MonoBehaviour(ptr)
         _lastToggle = Time.time;
         Open();
     }
-
+    private static Vector3 GetWindowPosition()
+    {
+        var cam = Camera.main;
+        if (cam == null) return new Vector3(0.4f, 1.5f, WindowZ);
+        var parent = HudManager.Instance.Chat.transform.parent;
+        Vector3 worldPos = cam.ViewportToWorldPoint(new Vector3(ViewportX, ViewportY, 10f));
+        Vector3 localPos = parent.InverseTransformPoint(worldPos);
+        localPos.z = WindowZ;
+        return localPos;
+    }
     public static void Open()
     {
         if (_instance == null)
         {
             var go = new GameObject("NotePadWindow");
             go.transform.SetParent(HudManager.Instance.Chat.transform.parent, false);
-            go.transform.localPosition = new Vector3(WindowX, WindowY, WindowZ);
             _instance = go.AddComponent<NotePadWindow>();
         }
+        _instance.transform.localPosition = GetWindowPosition();
         _instance.gameObject.SetActive(true);
         _instance.transform.SetAsLastSibling();
         _instance._focused = true;
     }
-
     public static void Close()
     {
         if (_instance != null) _instance._focused = false;
         _instance?.gameObject.SetActive(false);
     }
-
     public static void ClearText()
     {
         if (_instance != null)
@@ -111,9 +114,7 @@ public class NotePadWindow(nint ptr) : MonoBehaviour(ptr)
             _instance.UpdateDisplay();
         }
     }
-
     public static void ForceToFront() => _instance?.transform.SetAsLastSibling();
-
     private int GetLineCount(string text)
     {
         if (_displayTmp == null) return 1;
@@ -121,11 +122,9 @@ public class NotePadWindow(nint ptr) : MonoBehaviour(ptr)
         _displayTmp.ForceMeshUpdate();
         return _displayTmp.textInfo.lineCount;
     }
-
     private void Update()
     {
         if (!IsOpen) return;
-
         bool mouseDown  = Input.GetMouseButtonDown(0);
         bool leftArrow  = Input.GetKeyDown(KeyCode.LeftArrow);
         bool rightArrow = Input.GetKeyDown(KeyCode.RightArrow);
@@ -140,9 +139,7 @@ public class NotePadWindow(nint ptr) : MonoBehaviour(ptr)
         bool enter         = Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter);
         bool escape        = Input.GetKeyDown(KeyCode.Escape);
         string typed       = Input.inputString;
-
         if (escape) { Close(); return; }
-
         if (mouseDown)
         {
             Vector3 mouseWorld = Camera.main.ScreenToWorldPoint(Input.mousePosition);
@@ -158,10 +155,8 @@ public class NotePadWindow(nint ptr) : MonoBehaviour(ptr)
                 return;
             }
         }
-
         if (!_focused) return;
         Input.ResetInputAxes();
-
         _cursorBlink += Time.deltaTime;
         if (_cursorBlink > 0.5f)
         {
@@ -169,9 +164,7 @@ public class NotePadWindow(nint ptr) : MonoBehaviour(ptr)
             _cursorVisible = !_cursorVisible;
             UpdateDisplay();
         }
-
         bool changed = false;
-
         if (leftArrow && _cursorPos > 0)
         { _cursorPos--; _cursorVisible = true; _cursorBlink = 0f; changed = true; }
         if (rightArrow && _cursorPos < _content.Length)
@@ -180,7 +173,6 @@ public class NotePadWindow(nint ptr) : MonoBehaviour(ptr)
         { MoveCursorVertical(-1); _cursorVisible = true; _cursorBlink = 0f; changed = true; }
         if (downArrow)
         { MoveCursorVertical(1); _cursorVisible = true; _cursorBlink = 0f; changed = true; }
-
         if (home)
         {
             int start = _cursorPos;
@@ -193,7 +185,7 @@ public class NotePadWindow(nint ptr) : MonoBehaviour(ptr)
             while (endPos < _content.Length && _content[endPos] != '\n') endPos++;
             _cursorPos = endPos; changed = true;
         }
-
+        // Backspace med håll-inne
         if (backspaceHeld)
         {
             _backspaceHeld += Time.deltaTime;
@@ -206,7 +198,7 @@ public class NotePadWindow(nint ptr) : MonoBehaviour(ptr)
             }
         }
         else { _backspaceHeld = 0f; }
-
+        // Delete med håll-inne
         if (deleteHeld)
         {
             _deleteHeld += Time.deltaTime;
@@ -218,7 +210,7 @@ public class NotePadWindow(nint ptr) : MonoBehaviour(ptr)
             }
         }
         else { _deleteHeld = 0f; }
-
+        // Enter — ny rad
         if (enter)
         {
             string newContent = _content.Insert(_cursorPos, "\n");
@@ -229,7 +221,7 @@ public class NotePadWindow(nint ptr) : MonoBehaviour(ptr)
                 _cursorVisible = true; _cursorBlink = 0f; changed = true;
             }
         }
-
+        // Vanliga tecken
         foreach (char c in typed)
         {
             if (c == '\b' || c == '\r' || c == '\n') continue;
@@ -241,10 +233,8 @@ public class NotePadWindow(nint ptr) : MonoBehaviour(ptr)
                 _cursorVisible = true; _cursorBlink = 0f; changed = true;
             }
         }
-
         if (changed) UpdateDisplay();
     }
-
     private void MoveCursorVertical(int dir)
     {
         if (_displayTmp == null || _content.Length == 0) return;
@@ -266,7 +256,6 @@ public class NotePadWindow(nint ptr) : MonoBehaviour(ptr)
         int newPos = info.lineInfo[targetLine].firstCharacterIndex + Mathf.Min(col, info.lineInfo[targetLine].characterCount - 1);
         _cursorPos = Mathf.Clamp(newPos, 0, _content.Length);
     }
-
     private void PlaceCursorAtMouse()
     {
         if (_displayTmp == null) return;
@@ -295,62 +284,14 @@ public class NotePadWindow(nint ptr) : MonoBehaviour(ptr)
         _cursorVisible = true; _cursorBlink = 0f;
         UpdateDisplay();
     }
-
     private void UpdateDisplay()
     {
         if (_displayTmp == null) return;
-
-        // Apply role name coloring to the raw content, then insert cursor.
-        string display = RoleColorizer.Apply(_content);
-
+        string display = _content;
         if (_focused && _cursorVisible)
-        {
-            // Cursor position is in terms of _content (plain text), but display
-            // now has TMP tags injected before the cursor's logical position.
-            // We need to find where _cursorPos maps to in the tagged string.
-            int taggedCursorPos = MapCursorToTaggedString(_content, display, _cursorPos);
-            display = display.Insert(taggedCursorPos, "|");
-        }
-
+            display = display.Insert(Mathf.Clamp(_cursorPos, 0, display.Length), "|");
         _displayTmp.text = display;
     }
-
-    /// <summary>
-    /// Maps a cursor index in <paramref name="plain"/> to the equivalent
-    /// index in <paramref name="tagged"/> (which may have extra TMP tag chars
-    /// injected before/around role names).
-    /// We walk both strings in parallel, skipping tag characters in tagged.
-    /// </summary>
-    private static int MapCursorToTaggedString(string plain, string tagged, int cursorInPlain)
-    {
-        int p = 0; // index into plain
-        int t = 0; // index into tagged
-
-        while (p < cursorInPlain && t < tagged.Length)
-        {
-            if (tagged[t] == '<')
-            {
-                // Skip the whole tag
-                int close = tagged.IndexOf('>', t);
-                t = close >= 0 ? close + 1 : tagged.Length;
-            }
-            else
-            {
-                p++;
-                t++;
-            }
-        }
-
-        // Skip any trailing opening tags at this position
-        while (t < tagged.Length && tagged[t] == '<')
-        {
-            int close = tagged.IndexOf('>', t);
-            t = close >= 0 ? close + 1 : tagged.Length;
-        }
-
-        return t;
-    }
-
     private void Start()
     {
         gameObject.layer = 5;
@@ -366,10 +307,8 @@ public class NotePadWindow(nint ptr) : MonoBehaviour(ptr)
             sr.sprite = bgSprite;
             sr.sortingOrder = 1000;
         }
-
         var template = HudManager.Instance?.Chat?.freeChatField?.textArea;
         if (template == null) { Log.LogError("Mall saknas!"); return; }
-
         var dispGo = Object.Instantiate(template.outputText.gameObject, transform);
         dispGo.name = "NoteText";
         dispGo.layer = 5;
@@ -393,15 +332,14 @@ public class NotePadWindow(nint ptr) : MonoBehaviour(ptr)
                 rt.sizeDelta = new Vector2(3.4f, 20f);
             }
         }
-
         var clearSprite      = LoadSprite("NotePadMod.Resources.notepad_clear.png");
         var clearHoverSprite = LoadSprite("NotePadMod.Resources.notepad_clear_hover.png");
         if (clearSprite != null)
         {
             var btnGo = new GameObject("ClearButton");
             btnGo.transform.SetParent(transform, false);
-            btnGo.transform.localPosition = new Vector3(0.65f, -1.55f, -0.2f);
-            btnGo.transform.localScale = new Vector3(0.24f, 0.24f, 1f);
+            btnGo.transform.localPosition = new Vector3(0.6f, -1.5f, -0.2f);
+            btnGo.transform.localScale = new Vector3(0.44f, 0.44f, 1f);
             btnGo.layer = 5;
             var sr = btnGo.AddComponent<SpriteRenderer>();
             sr.sprite = clearSprite;
@@ -419,12 +357,9 @@ public class NotePadWindow(nint ptr) : MonoBehaviour(ptr)
                 bpb.OnMouseOut.AddListener((UnityAction)(() => sr.sprite = clearSprite));
             }
         }
-
         UpdateDisplay();
     }
-
     private void OnDestroy() => _instance = null;
-
     private static Sprite? LoadSprite(string name)
     {
         var asm = Assembly.GetExecutingAssembly();
