@@ -73,7 +73,7 @@ public static class HudManagerPatch
         if (NotePadButtonObj)
         {
             bool wikiVisible = HudManagerPatches.WikiButton != null && HudManagerPatches.WikiButton.activeSelf;
-            NotePadButtonObj.SetActive(wikiVisible);
+            NotePadButtonObj!.SetActive(wikiVisible);
         }
     }
 
@@ -93,7 +93,7 @@ public static class HudManagerPatch
             NotePadWindow.ForceToFront();
     }
 
-    // Blockera tangentbordsrörelse
+    // Block keyboard from feeding new input into PlayerPhysics
     [HarmonyPatch(typeof(KeyboardJoystick), nameof(KeyboardJoystick.Update))]
     [HarmonyPrefix]
     public static bool KeyboardJoystickUpdatePatch()
@@ -101,7 +101,7 @@ public static class HudManagerPatch
         return !NotePadWindow.IsOpen;
     }
 
-    // Blockera zoom via FollowerCamera
+    // Block camera zoom while notepad is open
     [HarmonyPatch(typeof(FollowerCamera), nameof(FollowerCamera.Update))]
     [HarmonyPrefix]
     public static bool FollowerCameraUpdatePatch()
@@ -109,7 +109,7 @@ public static class HudManagerPatch
         return !NotePadWindow.IsOpen;
     }
 
-    // Blockera lobbyn
+    // Block lobby Update while notepad is open
     [HarmonyPatch(typeof(LobbyBehaviour), nameof(LobbyBehaviour.Update))]
     [HarmonyPrefix]
     public static bool LobbyBehaviourUpdatePatch()

@@ -1,0 +1,15 @@
+{
+  "Name": "ToU:M Notepad",
+  "Description": "Town of Us Mira notepad mod ",
+  "Tags": [
+    "mods"
+  ],
+  "Icon": "NotePadMod.Resources.NotepadIcon.png",
+  "License": "GPLv3",
+  "Authors": [
+    "IdkImNeil"
+  ],
+  "Links": {
+    "Source": "https://github.com/neilmjain/TOUNotepad"
+    }
+}

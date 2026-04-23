@@ -13,71 +13,71 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="BepInEx.Core">
-      <HintPath>$(AmongUsDir)\BepInEx\core\BepInEx.Core.dll</HintPath>
+      <HintPath>/Users/neiljain/Documents/GitHub/Mira-NotePad/libs/BepInEx.Core.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="BepInEx.Unity.IL2CPP">
-      <HintPath>$(AmongUsDir)\BepInEx\core\BepInEx.Unity.IL2CPP.dll</HintPath>
+      <HintPath>/Users/neiljain/Documents/GitHub/Mira-NotePad/libs/BepInEx.Unity.IL2CPP.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="BepInEx.Unity.Common">
-      <HintPath>$(AmongUsDir)\BepInEx\core\BepInEx.Unity.Common.dll</HintPath>
+      <HintPath>/Users/neiljain/Documents/GitHub/Mira-NotePad/libs/BepInEx.Unity.Common.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="Il2CppInterop.Runtime">
-      <HintPath>$(AmongUsDir)\BepInEx\core\Il2CppInterop.Runtime.dll</HintPath>
+      <HintPath>/Users/neiljain/Documents/GitHub/Mira-NotePad/libs/Il2CppInterop.Runtime.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="0Harmony">
-      <HintPath>$(AmongUsDir)\BepInEx\core\0Harmony.dll</HintPath>
+      <HintPath>/Users/neiljain/Documents/GitHub/Mira-NotePad/libs/0Harmony.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="Reactor">
-      <HintPath>$(AmongUsDir)\BepInEx\plugins\Reactor.dll</HintPath>
+      <HintPath>/Users/neiljain/Documents/GitHub/Mira-NotePad/libs/Reactor.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="MiraAPI">
-      <HintPath>$(AmongUsDir)\BepInEx\plugins\MiraAPI.dll</HintPath>
+      <HintPath>/Users/neiljain/Documents/GitHub/Mira-NotePad/libs/MiraAPI.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="TownOfUsMira">
-      <HintPath>$(AmongUsDir)\BepInEx\plugins\TownOfUsMira.dll</HintPath>
+      <HintPath>/Users/neiljain/Documents/GitHub/Mira-NotePad/libs/TownOfUsMira.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="Il2Cppmscorlib">
-      <HintPath>$(AmongUsDir)\BepInEx\interop\Il2Cppmscorlib.dll</HintPath>
+      <HintPath>/Users/neiljain/Documents/GitHub/Mira-NotePad/libs/Il2Cppmscorlib.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="Assembly-CSharp">
-      <HintPath>$(AmongUsDir)\BepInEx\interop\Assembly-CSharp.dll</HintPath>
+      <HintPath>/Users/neiljain/Documents/GitHub/Mira-NotePad/libs/Assembly-CSharp.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="UnityEngine.CoreModule">
-      <HintPath>$(AmongUsDir)\BepInEx\interop\UnityEngine.CoreModule.dll</HintPath>
+      <HintPath>/Users/neiljain/Documents/GitHub/Mira-NotePad/libs/UnityEngine.CoreModule.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="UnityEngine.UI">
-      <HintPath>$(AmongUsDir)\BepInEx\interop\UnityEngine.UI.dll</HintPath>
+      <HintPath>/Users/neiljain/Documents/GitHub/Mira-NotePad/libs/UnityEngine.UI.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="Unity.TextMeshPro">
-      <HintPath>$(AmongUsDir)\BepInEx\interop\Unity.TextMeshPro.dll</HintPath>
+      <HintPath>/Users/neiljain/Documents/GitHub/Mira-NotePad/libs/Unity.TextMeshPro.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="UnityEngine.InputLegacyModule">
-      <HintPath>$(AmongUsDir)\BepInEx\interop\UnityEngine.InputLegacyModule.dll</HintPath>
+      <HintPath>/Users/neiljain/Documents/GitHub/Mira-NotePad/libs/UnityEngine.InputLegacyModule.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="UnityEngine.Physics2DModule">
-      <HintPath>$(AmongUsDir)\BepInEx\interop\UnityEngine.Physics2DModule.dll</HintPath>
+      <HintPath>/Users/neiljain/Documents/GitHub/Mira-NotePad/libs/UnityEngine.Physics2DModule.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="UnityEngine.UIModule">
-      <HintPath>$(AmongUsDir)\BepInEx\interop\UnityEngine.UIModule.dll</HintPath>
+      <HintPath>/Users/neiljain/Documents/GitHub/Mira-NotePad/libs/UnityEngine.UIModule.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="UnityEngine.ImageConversionModule">
-      <HintPath>$(AmongUsDir)\BepInEx\interop\UnityEngine.ImageConversionModule.dll</HintPath>
+      <HintPath>/Users/neiljain/Documents/GitHub/Mira-NotePad/libs/UnityEngine.ImageConversionModule.dll</HintPath>
       <Private>false</Private>
     </Reference>
   </ItemGroup>
@@ -88,12 +88,14 @@
     <EmbeddedResource Include="Resources\notepad_window_black.png" />
     <EmbeddedResource Include="Resources\notepad_clear.png" />
     <EmbeddedResource Include="Resources\notepad_clear_hover.png" />
+    <EmbeddedResource Include="Resources\NotepadIcon.png" />
+    <EmbeddedResource Include="modinfo.json" />
   </ItemGroup>
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-    <MakeDir Directories="$(AmongUsDir)\BepInEx\plugins\" />
+    <MakeDir Directories="/Users/neiljain/Documents/GitHub/Mira-NotePad/libs/" />
     <Copy
       SourceFiles="$(OutputPath)$(AssemblyName).dll"
-      DestinationFolder="$(AmongUsDir)\BepInEx\plugins\"
+      DestinationFolder="/Users/neiljain/Documents/GitHub/Mira-NotePad/libs/"
       SkipUnchangedFiles="false" />
     <Message Text="DLL kopierad till plugins!" Importance="high" />
   </Target>

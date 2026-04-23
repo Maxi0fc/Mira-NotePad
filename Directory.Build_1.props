@@ -1,0 +1,7 @@
+<Project>
+  <PropertyGroup>
+    <!-- Strip the hardcoded Windows Visual Studio fallback folder that breaks
+         Linux CI builds. The path only exists on the original dev machine. -->
+    <FallbackPackageFolders></FallbackPackageFolders>
+  </PropertyGroup>
+</Project>
