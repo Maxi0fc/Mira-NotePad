@@ -25,29 +25,14 @@ public class NotePadWindow(nint ptr) : MonoBehaviour(ptr)
     private const float HoldDelay = 0.4f;
     private const float HoldRepeat = 0.05f;
     private const int MaxLines = 13;
-
-    // ── Layout ───────────────────────────────────────────────────────────────
-    // These match the ORIGINAL working values exactly (BgScale 0.5, text at -1.8/1.0).
-    // The ruled lines are tuned to sit inside that known-good layout.
-    private const float WindowX    =  0.4f;
-    private const float WindowY    =  1.5f;
-    private const float WindowZ    = -50f;
-    private const float BgScale    =  0.5f;   // original — do not change without re-tuning lines
-
-    // Text area local position (original working values)
-    private const float TextLocalX = -1.8f;
-    private const float TextLocalY =  1.0f;
-    private const float TextScale  =  0.7f;
-    private const float TextWidth  =  3.4f;
-
-    // Ruled lines — tuned to sit inside the panel at BgScale 0.5.
-    // TMP fontSize 2.2 * TextScale 0.7 gives ~0.215 world-unit line height.
-    // Text top is at TextLocalY (1.0), first baseline is ~0.15 below that.
-    private const float RuledFirstY  =  0.83f;
-    private const float RuledSpacing =  0.215f;
-    private const float RuledWidth   =  2.55f;   // fits inside panel at scale 0.5
-    private const float RuledLocalX  = -0.58f;   // horizontally centred under text
-
+    // --- Positionering ---
+    private const float WindowX = 0.4f;
+    private const float WindowY = 1.5f;
+    private const float WindowZ = -50f;
+    private const float TextX = -1.8f;
+    private const float TextY = 1f;
+    // ---------------------
+    // BepInEx config — text color
     public static ConfigEntry<bool>? ColorBlack;
     public static ConfigEntry<bool>? ColorWhite;
     public static ConfigEntry<bool>? ColorRed;
@@ -87,12 +72,11 @@ public class NotePadWindow(nint ptr) : MonoBehaviour(ptr)
         // via the <color> wrapper so role highlights still show through.
         return Color.white;
     }
-
-    private static string GetWindowSpriteName() =>
-        WindowBlack?.Value == true
-            ? "NotePadMod.Resources.notepad_window_black.png"
-            : "NotePadMod.Resources.notepad_window.png";
-
+    private static string GetWindowSpriteName()
+    {
+        if (WindowBlack?.Value == true) return "NotePadMod.Resources.notepad_window_black.png";
+        return "NotePadMod.Resources.notepad_window.png";
+    }
     public static bool IsOpen => _instance != null && _instance.gameObject.activeSelf;
 
     public static void Toggle()
@@ -157,14 +141,13 @@ public class NotePadWindow(nint ptr) : MonoBehaviour(ptr)
     private void Update()
     {
         if (!IsOpen) return;
-
-        bool mouseDown     = Input.GetMouseButtonDown(0);
-        bool leftArrow     = Input.GetKeyDown(KeyCode.LeftArrow);
-        bool rightArrow    = Input.GetKeyDown(KeyCode.RightArrow);
-        bool upArrow       = Input.GetKeyDown(KeyCode.UpArrow);
-        bool downArrow     = Input.GetKeyDown(KeyCode.DownArrow);
-        bool home          = Input.GetKeyDown(KeyCode.Home);
-        bool end           = Input.GetKeyDown(KeyCode.End);
+        bool mouseDown  = Input.GetMouseButtonDown(0);
+        bool leftArrow  = Input.GetKeyDown(KeyCode.LeftArrow);
+        bool rightArrow = Input.GetKeyDown(KeyCode.RightArrow);
+        bool upArrow    = Input.GetKeyDown(KeyCode.UpArrow);
+        bool downArrow  = Input.GetKeyDown(KeyCode.DownArrow);
+        bool home       = Input.GetKeyDown(KeyCode.Home);
+        bool end        = Input.GetKeyDown(KeyCode.End);
         bool backspace     = Input.GetKeyDown(KeyCode.Backspace);
         bool backspaceHeld = Input.GetKey(KeyCode.Backspace);
         bool delete        = Input.GetKeyDown(KeyCode.Delete);
@@ -331,94 +314,11 @@ public class NotePadWindow(nint ptr) : MonoBehaviour(ptr)
     private void UpdateDisplay()
     {
         if (_displayTmp == null) return;
-
-        // Apply role coloring first
-        string display = RoleColorizer.Apply(_content);
-
-        // Insert cursor before wrapping
+        string display = _content;
         if (_focused && _cursorVisible)
-        {
-            int taggedCursorPos = MapCursorToTaggedString(_content, display, _cursorPos);
-            display = display.Insert(taggedCursorPos, "|");
-        }
-
-        // Wrap everything in the user's chosen base color so plain text matches
-        // their config choice. Role <color> tags will override this locally.
-        // This avoids setting _displayTmp.color to black (which would kill all
-        // rich-text color tags as a vertex multiplier).
-        string baseHex = GetBaseColorHex();
-        _displayTmp.text = $"<color=#{baseHex}>{display}</color>";
+            display = display.Insert(Mathf.Clamp(_cursorPos, 0, display.Length), "|");
+        _displayTmp.text = display;
     }
-
-    private static string GetBaseColorHex()
-    {
-        if (ColorRed?.Value    == true) return "FF0000";
-        if (ColorYellow?.Value == true) return "FFFF00";
-        if (ColorGreen?.Value  == true) return "00FF00";
-        if (ColorCyan?.Value   == true) return "00FFFF";
-        if (ColorGrey?.Value   == true) return "808080";
-        if (ColorWhite?.Value  == true) return "FFFFFF";
-        return "000000"; // default black
-    }
-
-    private static int MapCursorToTaggedString(string plain, string tagged, int cursorInPlain)
-    {
-        int p = 0;
-        int t = 0;
-
-        while (p < cursorInPlain && t < tagged.Length)
-        {
-            if (tagged[t] == '<')
-            {
-                int close = tagged.IndexOf('>', t);
-                t = close >= 0 ? close + 1 : tagged.Length;
-            }
-            else
-            {
-                p++;
-                t++;
-            }
-        }
-
-        while (t < tagged.Length && tagged[t] == '<')
-        {
-            int close = tagged.IndexOf('>', t);
-            t = close >= 0 ? close + 1 : tagged.Length;
-        }
-
-        return t;
-    }
-
-    /// <summary>
-    /// Draws horizontal ruled lines as children of the window transform.
-    /// Because they are children, all positions are in LOCAL space and will
-    /// always stay inside the panel regardless of where the window is placed.
-    /// </summary>
-    private void CreateRuledLines()
-    {
-        // 1×1 pixel texture — localScale.x/y control the actual size in local units
-        var lineTex = new Texture2D(1, 1, TextureFormat.RGBA32, false);
-        lineTex.SetPixel(0, 0, new Color(0.45f, 0.45f, 0.45f, 0.40f));
-        lineTex.Apply();
-        // pixels-per-unit = 1 so localScale directly equals world/local size
-        var lineSprite = Sprite.Create(lineTex, new Rect(0, 0, 1, 1), new Vector2(0.5f, 0.5f), 1f);
-
-        for (int i = 0; i < MaxLines; i++)
-        {
-            var go = new GameObject($"RuledLine_{i}");
-            go.transform.SetParent(transform, false);
-            go.layer = 5;
-
-            float localY = RuledFirstY - i * RuledSpacing;
-            go.transform.localPosition = new Vector3(RuledLocalX, localY, -0.05f);
-            go.transform.localScale    = new Vector3(RuledWidth, 0.012f, 1f);
-
-            var sr = go.AddComponent<SpriteRenderer>();
-            sr.sprite       = lineSprite;
-            sr.sortingOrder = 1001; // above BG (1000), below text (1002)
-        }
-    }
-
     private void Start()
     {
         gameObject.layer = 5;
@@ -436,8 +336,6 @@ public class NotePadWindow(nint ptr) : MonoBehaviour(ptr)
             sr.sprite       = bgSprite;
             sr.sortingOrder = 1000;
         }
-
-        // ── Text display ─────────────────────────────────────────────────────
         var template = HudManager.Instance?.Chat?.freeChatField?.textArea;
         if (template == null) { Log.LogError("Mall saknas!"); return; }
 
@@ -465,11 +363,6 @@ public class NotePadWindow(nint ptr) : MonoBehaviour(ptr)
                 rt.sizeDelta = new Vector2(TextWidth, 20f);
             }
         }
-
-        // ── Ruled lines ──────────────────────────────────────────────────────
-        CreateRuledLines();
-
-        // ── Clear button ─────────────────────────────────────────────────────
         var clearSprite      = LoadSprite("NotePadMod.Resources.notepad_clear.png");
         var clearHoverSprite = LoadSprite("NotePadMod.Resources.notepad_clear_hover.png");
         if (clearSprite != null)
