@@ -2,13 +2,13 @@ name: CI
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, master ]
     tags:
       - 'v*'
   release:
     types: [published]
   pull_request:
-    branches: [ main ]
+    branches: [ main, master ]
 
 jobs:
   build:
