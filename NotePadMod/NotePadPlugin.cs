@@ -5,7 +5,7 @@ using MiraAPI.LocalSettings;
 
 namespace NotePadMod;
 
-[BepInPlugin("maxi.notepad", "Notepad", "1.0.0")]
+[BepInPlugin("maxi.notepad", "Notepad", "1.2.0")]
 [BepInDependency("gg.reactor.api")]
 [BepInDependency("mira.api")]
 public class NotePadPlugin : BasePlugin
