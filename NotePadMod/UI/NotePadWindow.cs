@@ -4,72 +4,100 @@ using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.UI;
 using TMPro;
-using BepInEx.Configuration;
+
 namespace NotePadMod.UI;
+
 [RegisterInIl2Cpp]
 public class NotePadWindow(nint ptr) : MonoBehaviour(ptr)
 {
-    private static readonly BepInEx.Logging.ManualLogSource Log = BepInEx.Logging.Logger.CreateLogSource("NotePad");
+    private static readonly BepInEx.Logging.ManualLogSource Log =
+        BepInEx.Logging.Logger.CreateLogSource("NotePad");
+
     private static NotePadWindow? _instance;
     private static float _lastToggle = -1f;
-    private string _content = "";
-    private int _cursorPos = 0;
-    private bool _focused = false;
-    private float _cursorBlink = 0f;
-    private bool _cursorVisible = true;
+
+    private string _content  = "";
+    private int    _cursorPos = 0;
+    private bool   _focused  = false;
+    private float  _cursorBlink  = 0f;
+    private bool   _cursorVisible = true;
     private TextMeshPro? _displayTmp;
     private float _backspaceHeld = 0f;
-    private float _deleteHeld = 0f;
-    private const float HoldDelay = 0.4f;
+    private float _deleteHeld    = 0f;
+
+    private const float HoldDelay  = 0.4f;
     private const float HoldRepeat = 0.05f;
-    private const int MaxLines = 13;
-    // --- Positionering ---
-    private const float WindowZ = -50f;
-    private const float TextX = -1.8f;
-    private const float TextY = 1f;
-    // Offset från knappens position till fönstrets centrum
-    private const float WindowOffsetX = -1.5f;
-    private const float WindowOffsetY = -1.0f;
-    // ---------------------
-    // BepInEx config — text color
-    public static ConfigEntry<bool>? ColorBlack;
-    public static ConfigEntry<bool>? ColorWhite;
-    public static ConfigEntry<bool>? ColorRed;
-    public static ConfigEntry<bool>? ColorYellow;
-    public static ConfigEntry<bool>? ColorGreen;
-    public static ConfigEntry<bool>? ColorCyan;
-    public static ConfigEntry<bool>? ColorGrey;
-    // BepInEx config — window skin
-    public static ConfigEntry<bool>? WindowGrey;
-    public static ConfigEntry<bool>? WindowBlack;
-    public static void InitConfig(ConfigFile config)
-    {
-        ColorBlack  = config.Bind("TextColor", "Black",  true,  "Use black text");
-        ColorWhite  = config.Bind("TextColor", "White",  false, "Use white text");
-        ColorRed    = config.Bind("TextColor", "Red",    false, "Use red text");
-        ColorYellow = config.Bind("TextColor", "Yellow", false, "Use yellow text");
-        ColorGreen  = config.Bind("TextColor", "Green",  false, "Use green text");
-        ColorCyan   = config.Bind("TextColor", "Cyan",   false, "Use cyan text");
-        ColorGrey   = config.Bind("TextColor", "Grey",   false, "Use grey text");
-        WindowGrey  = config.Bind("WindowSkin", "Grey",  true,  "Use grey notepad window (notepad_window.png)");
-        WindowBlack = config.Bind("WindowSkin", "Black", false, "Use black notepad window (notepad_window_black.png)");
-    }
+    private const int   MaxLines   = 13;
+
+    // Window layout
+    private const float WindowZ    = -50f;
+    private const float TextLocalX = -1.8f;
+    private const float TextLocalY =  1.0f;
+    private const float TextWidth  =  3.5f;
+
+    /// <summary>
+    /// Returns the color to set on the TMP component itself.
+    /// Black is handled via a rich-text wrapper instead (so that
+    /// <color> tags inside the text are not multiplied).
+    /// </summary>
     private static Color GetTextColor()
     {
-        if (ColorWhite?.Value  == true) return Color.white;
-        if (ColorRed?.Value    == true) return Color.red;
-        if (ColorYellow?.Value == true) return Color.yellow;
-        if (ColorGreen?.Value  == true) return Color.green;
-        if (ColorCyan?.Value   == true) return Color.cyan;
-        if (ColorGrey?.Value   == true) return Color.grey;
-        return Color.black;
+        var settings = NotePadPlugin.Settings;
+        return settings.TextColor.Value switch
+        {
+            NotepadTextColor.Red    => Color.red,
+            NotepadTextColor.Yellow => Color.yellow,
+            NotepadTextColor.Green  => Color.green,
+            NotepadTextColor.Cyan   => Color.cyan,
+            NotepadTextColor.Grey   => Color.grey,
+            // White and Black: keep TMP component white so <color> tags work
+            _ => Color.white,
+        };
     }
-    private static string GetWindowSpriteName()
+
+    /// <summary>
+    /// Returns a hex color string to wrap plain text in, or null when the TMP
+    /// component color already represents the intended color.
+    /// </summary>
+    private static string? GetPlainTextColorTag()
     {
-        if (WindowBlack?.Value == true) return "NotePadMod.Resources.notepad_window_black.png";
-        return "NotePadMod.Resources.notepad_window.png";
+        var settings = NotePadPlugin.Settings;
+        return settings.TextColor.Value == NotepadTextColor.Black ? "#000000" : null;
     }
+
+    private static string GetWindowResourceName()
+    {
+        var settings = NotePadPlugin.Settings;
+        return settings.WindowSkin.Value == NotepadWindowSkin.Black
+            ? "NotePadMod.Resources.notepad_window_black.png"
+            : "NotePadMod.Resources.notepad_window.png";
+    }
+
+    // ── Public state ──────────────────────────────────────────────────────────
+
     public static bool IsOpen => _instance != null && _instance.gameObject.activeSelf;
+
+    /// <summary>
+    /// Computes the window's local position so it appears just below-left of the
+    /// notepad button, regardless of which HUD row it's currently sitting in.
+    /// </summary>
+    private static Vector3 GetWindowPositionRelativeToButton()
+    {
+        var btn = Patches.HudManagerPatch.NotePadButtonObj;
+        var parent = HudManager.Instance.Chat.transform.parent;
+
+        if (btn != null && parent != null)
+        {
+            // Convert the button's world position into the window parent's local space.
+            Vector3 btnLocal = parent.InverseTransformPoint(btn.transform.position);
+            // Offset so the window appears below and to the left of the button.
+            return new Vector3(btnLocal.x - 1.5f, btnLocal.y - 1.0f, WindowZ);
+        }
+
+        // Fallback if button isn't ready yet.
+        return new Vector3(0.4f, 1.5f, WindowZ);
+    }
+
     public static void Toggle()
     {
         if (IsOpen) { Close(); return; }
@@ -77,17 +105,7 @@ public class NotePadWindow(nint ptr) : MonoBehaviour(ptr)
         _lastToggle = Time.time;
         Open();
     }
-    private static Vector3 GetWindowPosition()
-    {
-        var btn = NotePadMod.Patches.HudManagerPatch.NotePadButtonObj;
-        var parent = HudManager.Instance.Chat.transform.parent;
-        if (btn != null)
-        {
-            Vector3 btnLocal = parent.InverseTransformPoint(btn.transform.position);
-            return new Vector3(btnLocal.x + WindowOffsetX, btnLocal.y + WindowOffsetY, WindowZ);
-        }
-        return new Vector3(0.4f, 1.5f, WindowZ);
-    }
+
     public static void Open()
     {
         if (_instance == null)
@@ -96,43 +114,60 @@ public class NotePadWindow(nint ptr) : MonoBehaviour(ptr)
             go.transform.SetParent(HudManager.Instance.Chat.transform.parent, false);
             _instance = go.AddComponent<NotePadWindow>();
         }
-        _instance.transform.localPosition = GetWindowPosition();
+        _instance.transform.localPosition = GetWindowPositionRelativeToButton();
         _instance.gameObject.SetActive(true);
         _instance.transform.SetAsLastSibling();
         _instance._focused = true;
+
+        // Flush held inputs so movement/zoom doesn't carry over.
+        Input.ResetInputAxes();
     }
+
     public static void Close()
     {
         if (_instance != null) _instance._focused = false;
         _instance?.gameObject.SetActive(false);
+
+        // Flush again so the game doesn't lurch when input is re-enabled.
+        Input.ResetInputAxes();
     }
+
     public static void ClearText()
     {
-        if (_instance != null)
-        {
-            _instance._content = "";
-            _instance._cursorPos = 0;
-            _instance.UpdateDisplay();
-        }
+        if (_instance == null) return;
+        _instance._content   = "";
+        _instance._cursorPos = 0;
+        _instance.UpdateDisplay();
     }
+
     public static void ForceToFront() => _instance?.transform.SetAsLastSibling();
+
+    // ── Internal helpers ──────────────────────────────────────────────────────
+
     private int GetLineCount(string text)
     {
         if (_displayTmp == null) return 1;
+        string saved = _displayTmp.text;
         _displayTmp.text = text;
         _displayTmp.ForceMeshUpdate();
-        return _displayTmp.textInfo.lineCount;
+        int count = _displayTmp.textInfo.lineCount;
+        _displayTmp.text = saved;
+        return count;
     }
+
+    // ── Unity lifecycle ───────────────────────────────────────────────────────
+
     private void Update()
     {
         if (!IsOpen) return;
-        bool mouseDown  = Input.GetMouseButtonDown(0);
-        bool leftArrow  = Input.GetKeyDown(KeyCode.LeftArrow);
-        bool rightArrow = Input.GetKeyDown(KeyCode.RightArrow);
-        bool upArrow    = Input.GetKeyDown(KeyCode.UpArrow);
-        bool downArrow  = Input.GetKeyDown(KeyCode.DownArrow);
-        bool home       = Input.GetKeyDown(KeyCode.Home);
-        bool end        = Input.GetKeyDown(KeyCode.End);
+
+        bool mouseDown     = Input.GetMouseButtonDown(0);
+        bool leftArrow     = Input.GetKeyDown(KeyCode.LeftArrow);
+        bool rightArrow    = Input.GetKeyDown(KeyCode.RightArrow);
+        bool upArrow       = Input.GetKeyDown(KeyCode.UpArrow);
+        bool downArrow     = Input.GetKeyDown(KeyCode.DownArrow);
+        bool home          = Input.GetKeyDown(KeyCode.Home);
+        bool end           = Input.GetKeyDown(KeyCode.End);
         bool backspace     = Input.GetKeyDown(KeyCode.Backspace);
         bool backspaceHeld = Input.GetKey(KeyCode.Backspace);
         bool delete        = Input.GetKeyDown(KeyCode.Delete);
@@ -140,7 +175,9 @@ public class NotePadWindow(nint ptr) : MonoBehaviour(ptr)
         bool enter         = Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter);
         bool escape        = Input.GetKeyDown(KeyCode.Escape);
         string typed       = Input.inputString;
+
         if (escape) { Close(); return; }
+
         if (mouseDown)
         {
             Vector3 mouseWorld = Camera.main.ScreenToWorldPoint(Input.mousePosition);
@@ -156,24 +193,29 @@ public class NotePadWindow(nint ptr) : MonoBehaviour(ptr)
                 return;
             }
         }
+
         if (!_focused) return;
         Input.ResetInputAxes();
+
+        // Keep TMP color in sync with the setting (may be changed while open).
+        if (_displayTmp != null)
+            _displayTmp.color = GetTextColor();
+
         _cursorBlink += Time.deltaTime;
         if (_cursorBlink > 0.5f)
         {
-            _cursorBlink = 0f;
+            _cursorBlink   = 0f;
             _cursorVisible = !_cursorVisible;
             UpdateDisplay();
         }
+
         bool changed = false;
-        if (leftArrow && _cursorPos > 0)
-        { _cursorPos--; _cursorVisible = true; _cursorBlink = 0f; changed = true; }
-        if (rightArrow && _cursorPos < _content.Length)
-        { _cursorPos++; _cursorVisible = true; _cursorBlink = 0f; changed = true; }
-        if (upArrow)
-        { MoveCursorVertical(-1); _cursorVisible = true; _cursorBlink = 0f; changed = true; }
-        if (downArrow)
-        { MoveCursorVertical(1); _cursorVisible = true; _cursorBlink = 0f; changed = true; }
+
+        if (leftArrow  && _cursorPos > 0)             { _cursorPos--; _cursorVisible = true; _cursorBlink = 0f; changed = true; }
+        if (rightArrow && _cursorPos < _content.Length){ _cursorPos++; _cursorVisible = true; _cursorBlink = 0f; changed = true; }
+        if (upArrow)   { MoveCursorVertical(-1); _cursorVisible = true; _cursorBlink = 0f; changed = true; }
+        if (downArrow) { MoveCursorVertical( 1); _cursorVisible = true; _cursorBlink = 0f; changed = true; }
+
         if (home)
         {
             int start = _cursorPos;
@@ -186,32 +228,37 @@ public class NotePadWindow(nint ptr) : MonoBehaviour(ptr)
             while (endPos < _content.Length && _content[endPos] != '\n') endPos++;
             _cursorPos = endPos; changed = true;
         }
-        // Backspace med håll-inne
+
+        // Backspace with hold-to-repeat
         if (backspaceHeld)
         {
             _backspaceHeld += Time.deltaTime;
-            bool doIt = backspace || (_backspaceHeld > HoldDelay && ((_backspaceHeld - HoldDelay) % HoldRepeat) < Time.deltaTime);
+            bool doIt = backspace || (_backspaceHeld > HoldDelay &&
+                        ((_backspaceHeld - HoldDelay) % HoldRepeat) < Time.deltaTime);
             if (doIt && _cursorPos > 0)
             {
-                _content = _content.Remove(_cursorPos - 1, 1);
+                _content   = _content.Remove(_cursorPos - 1, 1);
                 _cursorPos--;
                 _cursorVisible = true; _cursorBlink = 0f; changed = true;
             }
         }
         else { _backspaceHeld = 0f; }
-        // Delete med håll-inne
+
+        // Delete with hold-to-repeat
         if (deleteHeld)
         {
             _deleteHeld += Time.deltaTime;
-            bool doIt = delete || (_deleteHeld > HoldDelay && ((_deleteHeld - HoldDelay) % HoldRepeat) < Time.deltaTime);
+            bool doIt = delete || (_deleteHeld > HoldDelay &&
+                        ((_deleteHeld - HoldDelay) % HoldRepeat) < Time.deltaTime);
             if (doIt && _cursorPos < _content.Length)
             {
-                _content = _content.Remove(_cursorPos, 1);
+                _content   = _content.Remove(_cursorPos, 1);
                 _cursorVisible = true; _cursorBlink = 0f; changed = true;
             }
         }
         else { _deleteHeld = 0f; }
-        // Enter — ny rad
+
+        // Enter — new line
         if (enter)
         {
             string newContent = _content.Insert(_cursorPos, "\n");
@@ -222,7 +269,8 @@ public class NotePadWindow(nint ptr) : MonoBehaviour(ptr)
                 _cursorVisible = true; _cursorBlink = 0f; changed = true;
             }
         }
-        // Vanliga tecken
+
+        // Printable characters
         foreach (char c in typed)
         {
             if (c == '\b' || c == '\r' || c == '\n') continue;
@@ -234,29 +282,34 @@ public class NotePadWindow(nint ptr) : MonoBehaviour(ptr)
                 _cursorVisible = true; _cursorBlink = 0f; changed = true;
             }
         }
+
         if (changed) UpdateDisplay();
     }
+
     private void MoveCursorVertical(int dir)
     {
         if (_displayTmp == null || _content.Length == 0) return;
         _displayTmp.text = _content;
         _displayTmp.ForceMeshUpdate();
-        var info = _displayTmp.textInfo;
+        var info      = _displayTmp.textInfo;
         int lineCount = info.lineCount;
         if (lineCount <= 1) return;
+
         int curLine = 0;
         for (int i = 0; i < lineCount; i++)
         {
             int first = info.lineInfo[i].firstCharacterIndex;
             int last  = info.lineInfo[i].lastCharacterIndex;
-            if (_cursorPos >= first && _cursorPos <= last)
-            { curLine = i; break; }
+            if (_cursorPos >= first && _cursorPos <= last) { curLine = i; break; }
         }
+
         int targetLine = Mathf.Clamp(curLine + dir, 0, lineCount - 1);
-        int col = _cursorPos - info.lineInfo[curLine].firstCharacterIndex;
-        int newPos = info.lineInfo[targetLine].firstCharacterIndex + Mathf.Min(col, info.lineInfo[targetLine].characterCount - 1);
+        int col    = _cursorPos - info.lineInfo[curLine].firstCharacterIndex;
+        int newPos = info.lineInfo[targetLine].firstCharacterIndex
+                   + Mathf.Min(col, info.lineInfo[targetLine].characterCount - 1);
         _cursorPos = Mathf.Clamp(newPos, 0, _content.Length);
     }
+
     private void PlaceCursorAtMouse()
     {
         if (_displayTmp == null) return;
@@ -264,9 +317,11 @@ public class NotePadWindow(nint ptr) : MonoBehaviour(ptr)
         _displayTmp.ForceMeshUpdate();
         var info = _displayTmp.textInfo;
         if (info.characterCount == 0) { _cursorPos = 0; return; }
+
         Vector3 mouseWorld = Camera.main.ScreenToWorldPoint(Input.mousePosition);
         mouseWorld.z = _displayTmp.transform.position.z;
         Vector3 localMouse = _displayTmp.transform.InverseTransformPoint(mouseWorld);
+
         float minDist = float.MaxValue;
         int bestChar = 0;
         for (int i = 0; i < info.characterCount; i++)
@@ -277,7 +332,7 @@ public class NotePadWindow(nint ptr) : MonoBehaviour(ptr)
             float dist = Vector2.Distance(localMouse, charCenter);
             if (dist < minDist)
             {
-                minDist = dist;
+                minDist  = dist;
                 bestChar = localMouse.x > charCenter.x ? i + 1 : i;
             }
         }
@@ -285,77 +340,132 @@ public class NotePadWindow(nint ptr) : MonoBehaviour(ptr)
         _cursorVisible = true; _cursorBlink = 0f;
         UpdateDisplay();
     }
+
     private void UpdateDisplay()
     {
         if (_displayTmp == null) return;
-        string display = RoleColorizer.Apply(_content);
+
+        // Insert cursor caret into the plain string before colorising.
+        string display = _content;
         if (_focused && _cursorVisible)
-        {
-            int taggedCursorPos = MapCursorToTaggedString(_content, display, _cursorPos);
-            display = display.Insert(taggedCursorPos, "|");
-        }
+            display = display.Insert(Mathf.Clamp(_cursorPos, 0, display.Length), "|");
+
+        // Apply role-name color tags.
+        display = RoleColorizer.Apply(display);
+
+        // Wrap in a plain-text color tag when Black is selected (other colors
+        // are set directly on the TMP component and don't need a wrapper).
+        string? colorTag = GetPlainTextColorTag();
+        if (colorTag != null)
+            display = $"<color={colorTag}>{display}</color>";
+
         _displayTmp.text = display;
     }
-    private static int MapCursorToTaggedString(string plain, string tagged, int cursorInPlain)
+
+    // ── Ruled-line constants ──────────────────────────────────────────────────
+    private const int   RuledLineCount  = 13;
+    private const float RuledLineHeight = 0.006f;   // thickness of each line
+
+    /// <summary>Creates a 1×1 white texture used for solid-colour quads.</summary>
+    private static Texture2D MakeWhiteTex()
     {
-        int p = 0;
-        int t = 0;
-        while (p < cursorInPlain && t < tagged.Length)
-        {
-            if (tagged[t] == '<')
-            {
-                int close = tagged.IndexOf('>', t);
-                t = close >= 0 ? close + 1 : tagged.Length;
-            }
-            else { p++; t++; }
-        }
-        while (t < tagged.Length && tagged[t] == '<')
-        {
-            int close = tagged.IndexOf('>', t);
-            t = close >= 0 ? close + 1 : tagged.Length;
-        }
+        var t = new Texture2D(1, 1, TextureFormat.RGBA32, false);
+        t.SetPixel(0, 0, Color.white);
+        t.Apply();
         return t;
     }
+
     private void Start()
     {
         gameObject.layer = 5;
-        var bgSprite = LoadSprite(GetWindowSpriteName());
+
+        // ── Background ────────────────────────────────────────────────────────
+        var bgSprite = LoadSprite(GetWindowResourceName());
         if (bgSprite != null)
         {
             var bgGo = new GameObject("BG");
             bgGo.transform.SetParent(transform, false);
             bgGo.transform.localPosition = Vector3.zero;
-            bgGo.transform.localScale = new Vector3(0.5f, 0.5f, 1f);
+            bgGo.transform.localScale    = new Vector3(0.5f, 0.5f, 1f);
             bgGo.layer = 5;
             var sr = bgGo.AddComponent<SpriteRenderer>();
-            sr.sprite = bgSprite;
+            sr.sprite       = bgSprite;
             sr.sortingOrder = 1000;
         }
+
+        // ── Text field ────────────────────────────────────────────────────────
         var template = HudManager.Instance?.Chat?.freeChatField?.textArea;
-        if (template == null) { Log.LogError("Mall saknas!"); return; }
+        if (template == null) { Log.LogError("Chat template missing!"); return; }
+
         var dispGo = Object.Instantiate(template.outputText.gameObject, transform);
-        dispGo.name = "NoteText";
+        dispGo.name  = "NoteText";
         dispGo.layer = 5;
-        dispGo.transform.localPosition = new Vector3(TextX, TextY, -0.1f);
-        dispGo.transform.localScale = new Vector3(0.7f, 0.7f, 1f);
+        dispGo.transform.localPosition = new Vector3(TextLocalX, TextLocalY, -0.1f);
+        dispGo.transform.localScale    = new Vector3(0.7f, 0.7f, 1f);
+
         _displayTmp = dispGo.GetComponent<TextMeshPro>();
         if (_displayTmp != null)
         {
-            _displayTmp.fontSize = 2.2f;
-            _displayTmp.color = GetTextColor();
+            _displayTmp.fontSize           = 2.2f;
+            _displayTmp.color              = GetTextColor();
             _displayTmp.enableWordWrapping = true;
-            _displayTmp.overflowMode = TextOverflowModes.Overflow;
-            _displayTmp.enableAutoSizing = false;
-            _displayTmp.alignment = TextAlignmentOptions.TopLeft;
-            _displayTmp.text = "";
-            _displayTmp.sortingOrder = 1001;
+            _displayTmp.overflowMode       = TextOverflowModes.Overflow;
+            _displayTmp.enableAutoSizing   = false;
+            _displayTmp.alignment          = TextAlignmentOptions.TopLeft;
+            _displayTmp.richText           = true;
+            _displayTmp.text               = "";
+            _displayTmp.sortingOrder       = 1002;
+
             var rt = _displayTmp.GetComponent<RectTransform>();
             if (rt != null)
             {
-                rt.pivot = new Vector2(0f, 1f);
-                rt.sizeDelta = new Vector2(3.4f, 20f);
+                rt.pivot     = new Vector2(0f, 1f);
+                rt.sizeDelta = new Vector2(TextWidth, 20f);
+            }
+
+            // ── Ruled lines ───────────────────────────────────────────────────
+            // Measure real line height by forcing a single-line mesh update,
+            // then multiply by the text object's local scale to get window-space units.
+            _displayTmp.text = "A";
+            _displayTmp.ForceMeshUpdate();
+            float tmpLineHeight = 0f;
+            if (_displayTmp.textInfo.lineCount > 0)
+                tmpLineHeight = _displayTmp.textInfo.lineInfo[0].lineHeight;
+            _displayTmp.text = "";
+
+            // textInfo lineHeight is in TMP local units. Scale to window local space.
+            float textScale   = dispGo.transform.localScale.y; // 0.7
+            float lineSpacing = tmpLineHeight * textScale;
+
+            // The text object's pivot is top-left at (TextLocalX, TextLocalY).
+            // The first line's baseline sits one lineHeight below the top.
+            // Add a small downward offset (0.03) so the rule is under the text, not through it.
+            float firstLineY = TextLocalY - lineSpacing + 0.03f;
+
+            // Line width: match the text rect width scaled into window space,
+            // centred on the text's left edge + half-width.
+            float lineWidth = TextWidth * textScale;
+            float lineCentreX = TextLocalX + lineWidth * 0.5f;
+
+            var lineTex    = MakeWhiteTex();
+            var lineSprite = Sprite.Create(lineTex, new Rect(0, 0, 1, 1), new Vector2(0.5f, 0.5f), 1f);
+            var lineColor  = new Color(0.45f, 0.55f, 0.75f, 0.35f);
+
+            for (int i = 0; i < RuledLineCount; i++)
+            {
+                var lineGo = new GameObject($"RuledLine_{i}");
+                lineGo.transform.SetParent(transform, false);
+                lineGo.transform.localPosition = new Vector3(lineCentreX, firstLineY - i * lineSpacing, -0.05f);
+                lineGo.transform.localScale    = new Vector3(lineWidth, RuledLineHeight, 1f);
+                lineGo.layer = 5;
+                var lsr = lineGo.AddComponent<SpriteRenderer>();
+                lsr.sprite       = lineSprite;
+                lsr.color        = lineColor;
+                lsr.sortingOrder = 1001;
             }
         }
+
+        // ── Clear button ──────────────────────────────────────────────────────
         var clearSprite      = LoadSprite("NotePadMod.Resources.notepad_clear.png");
         var clearHoverSprite = LoadSprite("NotePadMod.Resources.notepad_clear_hover.png");
         if (clearSprite != null)
@@ -363,27 +473,34 @@ public class NotePadWindow(nint ptr) : MonoBehaviour(ptr)
             var btnGo = new GameObject("ClearButton");
             btnGo.transform.SetParent(transform, false);
             btnGo.transform.localPosition = new Vector3(0.6f, -1.5f, -0.2f);
-            btnGo.transform.localScale = new Vector3(0.24f, 0.24f, 1f);
+            btnGo.transform.localScale    = new Vector3(0.24f, 0.24f, 1f);
             btnGo.layer = 5;
+
             var sr = btnGo.AddComponent<SpriteRenderer>();
-            sr.sprite = clearSprite;
+            sr.sprite       = clearSprite;
             sr.sortingOrder = 1002;
+
             var bcol = btnGo.AddComponent<BoxCollider2D>();
             bcol.size = new Vector2(1.5f, 0.5f);
+
             var bpb = btnGo.AddComponent<PassiveButton>();
-            bpb.OnClick = new Button.ButtonClickedEvent();
+            bpb.OnClick    = new Button.ButtonClickedEvent();
             bpb.OnMouseOver = new UnityEvent();
-            bpb.OnMouseOut = new UnityEvent();
+            bpb.OnMouseOut  = new UnityEvent();
             bpb.OnClick.AddListener((UnityAction)ClearText);
+
             if (clearHoverSprite != null)
             {
                 bpb.OnMouseOver.AddListener((UnityAction)(() => sr.sprite = clearHoverSprite));
-                bpb.OnMouseOut.AddListener((UnityAction)(() => sr.sprite = clearSprite));
+                bpb.OnMouseOut.AddListener((UnityAction)(() => sr.sprite  = clearSprite));
             }
         }
+
         UpdateDisplay();
     }
+
     private void OnDestroy() => _instance = null;
+
     private static Sprite? LoadSprite(string name)
     {
         var asm = Assembly.GetExecutingAssembly();
