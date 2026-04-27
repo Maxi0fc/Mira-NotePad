@@ -10,7 +10,7 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(GITHUB_ACTIONS)' != 'true'">
-    <AmongUsDir>C:\Users\adama\OneDrive\Skrivbord\1.5.2</AmongUsDir>
+    <AmongUsDir>/Users/neiljain/Library/Application Support/CrossOver/Bottles/Among Us/drive_c/Program Files (x86)/Steam/steamapps/common/Among Us</AmongUsDir>
   </PropertyGroup>
 
   <!-- Lokala referenser -->

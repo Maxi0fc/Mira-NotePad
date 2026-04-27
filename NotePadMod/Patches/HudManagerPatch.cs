@@ -1,27 +1,27 @@
 using HarmonyLib;
-using MiraAPI.LocalSettings;
 using NotePadMod.UI;
 using TownOfUs.Patches;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.UI;
 using System.Reflection;
+using BepInEx.Configuration;
 namespace NotePadMod.Patches;
+
 [HarmonyPatch]
 public static class HudManagerPatch
 {
     public static GameObject? NotePadButtonObj;
-<<<<<<< Updated upstream
-    public static AspectPosition? NotePadAspectPos;
-=======
-
-    // Track which row we're currently parented into so we can reparent when the
-    // setting changes without waiting for a full HUD rebuild.
     private static NotepadButtonRow _currentRow = (NotepadButtonRow)(-1);
-
->>>>>>> Stashed changes
     private static Sprite? _inactiveSprite;
     private static Sprite? _activeSprite;
+
+    // Whether we are currently in a meeting — used to manage button parenting.
+    private static bool _inMeeting = false;
+
+    // The HUD parent we reparent to during meetings so the button stays visible
+    // even when TOU:M deactivates the row GameObjects.
+    private static Transform? _hudRoot = null;
 
     private static Sprite? LoadEmbeddedSprite(string resourceName)
     {
@@ -38,7 +38,7 @@ public static class HudManagerPatch
     public static void InvalidateButton()
     {
         if (NotePadButtonObj)
-            NotePadButtonObj!.transform.SetParent(null, false);
+            Object.Destroy(NotePadButtonObj);
 
         NotePadButtonObj = null;
         _currentRow = (NotepadButtonRow)(-1);
@@ -47,6 +47,10 @@ public static class HudManagerPatch
     private static bool IsButtonStale()
     {
         if (!NotePadButtonObj) return true;
+
+        // During a meeting the button is intentionally parented to _hudRoot,
+        // so don't treat that as stale.
+        if (_inMeeting) return false;
 
         var expectedParent = _currentRow == NotepadButtonRow.TopRow
             ? HudManagerPatches.UiTopRight?.transform
@@ -57,11 +61,13 @@ public static class HudManagerPatch
     }
 
     public static void CreateOrUpdateNotePadButton(HudManager instance)
->>>>>>> Stashed changes
     {
-        // Both TOU:M grid rows must exist before we can do anything.
         if (HudManagerPatches.UiTopRight == null || HudManagerPatches.ExtraUiTopRight == null)
             return;
+
+        // Cache the HUD root once — it's the parent of the row containers.
+        if (_hudRoot == null)
+            _hudRoot = HudManagerPatches.UiTopRight.transform.parent;
 
         if (IsButtonStale())
             InvalidateButton();
@@ -71,62 +77,25 @@ public static class HudManagerPatch
         // ── First-time creation ───────────────────────────────────────────────
         if (!NotePadButtonObj)
         {
-<<<<<<< Updated upstream
-=======
-            _currentRow = (NotepadButtonRow)(-1); // force reparent after creation
+            _currentRow = (NotepadButtonRow)(-1);
 
->>>>>>> Stashed changes
             NotePadButtonObj = Object.Instantiate(
                 instance.MapButton.gameObject,
-                // Temporary parent — will be corrected below.
                 HudManagerPatches.ExtraUiTopRight.transform
             );
             NotePadButtonObj.name = "NotePadButton";
-<<<<<<< Updated upstream
-            var btn = NotePadButtonObj.GetComponent<PassiveButton>();
-            btn.OnClick = new Button.ButtonClickedEvent();
-            btn.OnClick.AddListener((UnityAction)NotePadWindow.Toggle);
-            NotePadButtonObj.transform.Find("Background").localPosition = Vector3.zero;
-=======
 
-            // Wire the click
             var btn = NotePadButtonObj.GetComponent<PassiveButton>();
             btn.OnClick = new Button.ButtonClickedEvent();
             btn.OnClick.AddListener((UnityAction)NotePadWindow.Toggle);
 
-            // TOU:M grid buttons must NOT have their own AspectPosition —
-            // the GridArrange component handles all placement.
             var ap = NotePadButtonObj.GetComponentInChildren<AspectPosition>();
-            if (ap != null) UnityEngine.Object.Destroy(ap);
+            if (ap != null) Object.Destroy(ap);
 
-            // Sprites
->>>>>>> Stashed changes
             if (_inactiveSprite == null)
                 _inactiveSprite = LoadEmbeddedSprite("NotePadMod.Resources.notepad_inactive.png");
             if (_activeSprite == null)
                 _activeSprite = LoadEmbeddedSprite("NotePadMod.Resources.notepad_active.png");
-<<<<<<< Updated upstream
-            if (_inactiveSprite != null)
-                NotePadButtonObj.transform.Find("Inactive").GetComponent<SpriteRenderer>().sprite = _inactiveSprite;
-            if (_activeSprite != null)
-                NotePadButtonObj.transform.Find("Active").GetComponent<SpriteRenderer>().sprite = _activeSprite;
-            NotePadAspectPos = NotePadButtonObj.GetComponentInChildren<AspectPosition>();
-        }
-        if (NotePadButtonObj && NotePadAspectPos != null && HudManagerPatches.WikiAspectPos != null)
-        {
-            var dist = HudManagerPatches.WikiAspectPos.DistanceFromEdge;
-            dist.x += 0.84f;
-            NotePadAspectPos.DistanceFromEdge = dist;
-            NotePadAspectPos.Alignment = HudManagerPatches.WikiAspectPos.Alignment;
-            NotePadAspectPos.AdjustPosition();
-        }
-        if (NotePadButtonObj)
-        {
-            bool wikiVisible = HudManagerPatches.WikiButton != null && HudManagerPatches.WikiButton.activeSelf;
-            NotePadButtonObj.SetActive(wikiVisible);
-        }
-    }
-=======
 
             var inactive = NotePadButtonObj.transform.Find("Inactive");
             var active   = NotePadButtonObj.transform.Find("Active");
@@ -134,10 +103,12 @@ public static class HudManagerPatch
             if (inactive != null && _inactiveSprite != null)
             {
                 inactive.GetComponent<SpriteRenderer>().sprite = _inactiveSprite;
+                inactive.localPosition = new Vector3(0f, 0.021f, -0.1f);
             }
             if (active != null && _activeSprite != null)
             {
                 active.GetComponent<SpriteRenderer>().sprite = _activeSprite;
+                active.localPosition = new Vector3(0f, 0.021f, -0.1f);
             }
         }
 
@@ -150,7 +121,14 @@ public static class HudManagerPatch
         {
             if (_hudRoot != null && NotePadButtonObj!.transform.parent != _hudRoot)
             {
+                // worldPositionStays=true so the button doesn't jump position.
                 NotePadButtonObj.transform.SetParent(_hudRoot, true);
+                // Render on top of meeting UI siblings.
+                NotePadButtonObj.transform.SetAsLastSibling();
+                // Re-enable any SpriteRenderers that Unity disabled when TOU:M
+                // deactivated the row container we were parented to.
+                foreach (var sr in NotePadButtonObj.GetComponentsInChildren<SpriteRenderer>(true))
+                    sr.enabled = true;
             }
             NotePadButtonObj!.SetActive(true);
             return; // skip normal row-placement logic during meetings
@@ -165,10 +143,21 @@ public static class HudManagerPatch
 
             NotePadButtonObj!.transform.SetParent(targetParent, false);
             NotePadButtonObj.transform.localPosition = Vector3.zero;
-            NotePadButtonObj.transform.SetAsFirstSibling();
+
+            // Both rows use GridArrange with StartAlign.Right.
+            // Right-aligned grids lay out children left-to-right from first→last sibling,
+            // so position in the row depends on sibling index:
+            //   TopRow:    we want the notepad at the FAR LEFT  → SetAsLastSibling
+            //              (last = pushed furthest left in a right-anchored layout)
+            //   SecondRow: we want the notepad at the FAR RIGHT → SetAsFirstSibling
+            //              (first = closest to the right anchor)
+            if (desiredRow == NotepadButtonRow.TopRow)
+                NotePadButtonObj.transform.SetAsLastSibling();
+            else
+                NotePadButtonObj.transform.SetAsFirstSibling();
+
             _currentRow = desiredRow;
 
-            // Let TOU:M re-arrange whichever row we just modified.
             HudManagerPatches.UiGrid?.ArrangeChilds();
             HudManagerPatches.ExtraUiGrid?.ArrangeChilds();
         }
@@ -178,7 +167,6 @@ public static class HudManagerPatch
 
     // ── Harmony patches ───────────────────────────────────────────────────────
 
->>>>>>> Stashed changes
     [HarmonyPatch(typeof(HudManager), nameof(HudManager.Update))]
     [HarmonyPostfix]
     public static void HudManagerUpdatePatch(HudManager __instance)
@@ -187,30 +175,35 @@ public static class HudManagerPatch
         CreateOrUpdateNotePadButton(__instance);
     }
 
-    /// <summary>
-    /// When TOU:M destroys / rebuilds the HUD rows (e.g. scene transitions) our
-    /// cached button reference becomes stale.  Nulling it out here forces a clean
-    /// recreation on the next Update tick.
-    /// </summary>
     [HarmonyPatch(typeof(HudManager), nameof(HudManager.Start))]
     [HarmonyPostfix]
     public static void HudManagerStartPatch(HudManager __instance)
     {
-        NotePadButtonObj!.SetActive(true);
+        _inMeeting = false;
+        InvalidateButton();
     }
 
-    /// <summary>
-    /// On meeting start TOU:M rebuilds the HUD rows, staling our button.
-    /// Invalidate so it gets cleanly re-parented. We do NOT invalidate on
-    /// MeetingHud.Close — the button survives the meeting fine and the next
-    /// Update tick keeps it visible.
-    /// </summary>
     [HarmonyPatch(typeof(MeetingHud), nameof(MeetingHud.Start))]
     [HarmonyPostfix]
     public static void MeetingHudStartPatch()
     {
-        InvalidateButton();
+        // Mark that we are in a meeting so Update logic reparents the button
+        // to the HUD root instead of the (now-hidden) row containers.
+        _inMeeting = true;
+        // Don't invalidate — we keep the button object and just reparent it.
     }
+
+    [HarmonyPatch(typeof(MeetingHud), nameof(MeetingHud.Close))]
+    [HarmonyPostfix]
+    public static void MeetingHudClosePatch()
+    {
+        // Meeting is ending — force a full re-parent back into the correct row
+        // on the next Update tick by invalidating _currentRow only (keeps the
+        // button object alive to avoid a flash of missing button).
+        _inMeeting = false;
+        _currentRow = (NotepadButtonRow)(-1);
+    }
+
     [HarmonyPatch(typeof(ChatController), nameof(ChatController.Update))]
     [HarmonyPostfix]
     public static void ChatUpdatePatch()
@@ -218,37 +211,47 @@ public static class HudManagerPatch
         if (NotePadWindow.IsOpen)
             NotePadWindow.ForceToFront();
     }
-<<<<<<< Updated upstream
-    // Blockera tangentbordsrörelse
-    [HarmonyPatch(typeof(KeyboardJoystick), nameof(KeyboardJoystick.Update))]
-    [HarmonyPrefix]
-    public static bool KeyboardJoystickUpdatePatch()
-    {
-        return !NotePadWindow.IsOpen;
-    }
-    // Blockera zoom via FollowerCamera
-    [HarmonyPatch(typeof(FollowerCamera), nameof(FollowerCamera.Update))]
-    [HarmonyPrefix]
-    public static bool FollowerCameraUpdatePatch()
-    {
-        return !NotePadWindow.IsOpen;
-    }
-    // Blockera lobbyn
-=======
 
-    // Block keyboard input reaching PlayerPhysics while notepad is open
     [HarmonyPatch(typeof(KeyboardJoystick), nameof(KeyboardJoystick.Update))]
     [HarmonyPrefix]
     public static bool KeyboardJoystickUpdatePatch() => !NotePadWindow.IsOpen;
 
-    // Block camera zoom while notepad is open
     [HarmonyPatch(typeof(FollowerCamera), nameof(FollowerCamera.Update))]
     [HarmonyPrefix]
     public static bool FollowerCameraUpdatePatch() => !NotePadWindow.IsOpen;
 
-    // Block lobby Update while notepad is open
->>>>>>> Stashed changes
     [HarmonyPatch(typeof(LobbyBehaviour), nameof(LobbyBehaviour.Update))]
     [HarmonyPrefix]
     public static bool LobbyBehaviourUpdatePatch() => !NotePadWindow.IsOpen;
+
+    /// <summary>
+    /// Freeze the local player's physics while the notepad is open.
+    /// Patches PlayerPhysics.FixedUpdate directly — this is what actually
+    /// applies velocity to the rigidbody each physics tick.
+    /// </summary>
+    [HarmonyPatch(typeof(PlayerPhysics), nameof(PlayerPhysics.FixedUpdate))]
+    [HarmonyPrefix]
+    public static bool PlayerPhysicsFixedUpdatePatch(PlayerPhysics __instance)
+    {
+        if (!NotePadWindow.IsOpen) return true;
+        if (__instance.myPlayer != PlayerControl.LocalPlayer) return true;
+
+        // Zero velocity every physics tick so the player can't drift.
+        __instance.body.velocity = Vector2.zero;
+        __instance.body.angularVelocity = 0f;
+        return false; // skip the rest of PlayerPhysics.FixedUpdate
+    }
+
+    /// <summary>
+    /// Block WalkPlayerTo coroutine from feeding new velocity values while
+    /// the notepad is open.
+    /// </summary>
+    [HarmonyPatch(typeof(PlayerPhysics), nameof(PlayerPhysics.WalkPlayerTo))]
+    [HarmonyPrefix]
+    public static bool WalkPlayerToPatch(PlayerPhysics __instance)
+    {
+        if (!NotePadWindow.IsOpen) return true;
+        if (__instance.myPlayer != PlayerControl.LocalPlayer) return true;
+        return false;
+    }
 }

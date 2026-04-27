@@ -1,6 +1,7 @@
 using BepInEx.Configuration;
 using MiraAPI.LocalSettings;
 using MiraAPI.LocalSettings.Attributes;
+using MiraAPI.Utilities.Assets;
 using TownOfUs.Assets;
 using UnityEngine;
 
