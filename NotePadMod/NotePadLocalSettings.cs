@@ -73,7 +73,7 @@ public sealed class NotePadLocalSettings(ConfigFile config) : LocalSettingsTab(c
         config.Bind(
             "Appearance",
             "Text Color",
-            NotepadTextColor.Black);
+            NotepadTextColor.White);
 
     /// <summary>
     /// Visual skin for the notepad window background sprite.
