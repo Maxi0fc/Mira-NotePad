@@ -86,12 +86,14 @@ public static class HudManagerPatch
             if (inactive != null && _inactiveSprite != null)
             {
                 inactive.GetComponent<SpriteRenderer>().sprite = _inactiveSprite;
-                inactive.localPosition = new Vector3(0f, 0.021f, -0.1f);
+                inactive.localPosition = new Vector3(0f, 0.021f, -80f);
+                NotePadButtonObj.transform.localPosition = new Vector3(0f, 0.021f, -80f);
             }
             if (active != null && _activeSprite != null)
             {
                 active.GetComponent<SpriteRenderer>().sprite = _activeSprite;
-                active.localPosition = new Vector3(0f, 0.021f, -0.1f);
+                active.localPosition = new Vector3(0f, 0.021f, -80f);
+                NotePadButtonObj.transform.localPosition = new Vector3(0f, 0.021f, -80f);
             }
         }
 
@@ -136,25 +138,25 @@ public static class HudManagerPatch
         InvalidateButton();
     }
 
-    /// <summary>
-    /// During meetings, TOU:M hides the zoom/wiki buttons by calling
-    /// ZoomButton.SetActive(false) — it does NOT deactivate the row containers
-    /// themselves. Our button stays visible naturally since it's in the row.
-    /// We just need to make sure the SpriteRenderers haven't been accidentally
-    /// disabled, and that the button is still active.
-    /// </summary>
     [HarmonyPatch(typeof(MeetingHud), nameof(MeetingHud.Start))]
-    [HarmonyPostfix]
-    public static void MeetingHudStartPatch()
-    {
-        if (NotePadButtonObj == null) return;
+[HarmonyPostfix]
+public static void MeetingHudStartPatch(MeetingHud __instance)
+{
+    if (NotePadButtonObj == null) return;
 
-        // Re-enable any SpriteRenderers that may have been touched.
-        foreach (var sr in NotePadButtonObj.GetComponentsInChildren<SpriteRenderer>(true))
-            sr.enabled = true;
+    NotePadButtonObj.SetActive(true);
+    NotePadButtonObj.transform.localPosition = new Vector3(0f, 0.021f, -80f);
 
-        NotePadButtonObj.SetActive(true);
-    }
+    
+    // Ensure all SpriteRenderers are enabled
+    foreach (var sr in NotePadButtonObj.GetComponentsInChildren<SpriteRenderer>(true))
+        sr.enabled = true;
+    
+    // Also check and enable the button's main renderer
+    var mainSpriteRenderer = NotePadButtonObj.GetComponent<SpriteRenderer>();
+    if (mainSpriteRenderer != null)
+        mainSpriteRenderer.enabled = true;
+}
 
     [HarmonyPatch(typeof(MeetingHud), nameof(MeetingHud.Close))]
     [HarmonyPostfix]
