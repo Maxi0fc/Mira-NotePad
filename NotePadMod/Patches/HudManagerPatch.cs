@@ -105,7 +105,7 @@ public static class HudManagerPatch
                 : HudManagerPatches.ExtraUiTopRight.transform;
 
             NotePadButtonObj!.transform.SetParent(targetParent, false);
-            NotePadButtonObj.transform.localPosition = Vector3.zero;
+            NotePadButtonObj.transform.localPosition = new Vector3(0f, 0.021f, -80f);
 
             if (desiredRow == NotepadButtonRow.TopRow)
                 NotePadButtonObj.transform.SetAsLastSibling();
@@ -164,6 +164,8 @@ public static void MeetingHudStartPatch(MeetingHud __instance)
     {
         if (NotePadButtonObj == null) return;
         NotePadButtonObj.SetActive(true);
+        NotePadButtonObj.transform.localPosition = new Vector3(0f, 0.021f, -80f);
+
     }
 
     [HarmonyPatch(typeof(ChatController), nameof(ChatController.Update))]

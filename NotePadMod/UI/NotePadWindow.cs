@@ -457,7 +457,7 @@ public class NotePadWindow(nint ptr) : MonoBehaviour(ptr)
             // The text object's pivot is top-left at (TextLocalX, TextLocalY).
             // The first line's baseline sits one lineHeight below the top.
             // Add a small downward offset (0.03) so the rule is under the text, not through it.
-            float firstLineY = TextLocalY - lineSpacing + 0.03f;
+            float firstLineY = TextLocalY - lineSpacing + 0.01f;
 
             // Line width: match the text rect width scaled into window space,
             // centred on the text's left edge + half-width.
