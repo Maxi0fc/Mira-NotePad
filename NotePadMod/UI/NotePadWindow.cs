@@ -182,7 +182,6 @@ public class NotePadWindow(nint ptr) : MonoBehaviour(ptr)
 
     public static void ForceToFront() => _instance?.transform.SetAsLastSibling();
 
-    // ── Internal helpers ──────────────────────────────────────────────────────
 
     private int GetLineCount(string text)
     {
@@ -195,7 +194,6 @@ public class NotePadWindow(nint ptr) : MonoBehaviour(ptr)
         return count;
     }
 
-    // ── Unity lifecycle ───────────────────────────────────────────────────────
 
     private void Update()
     {
@@ -237,7 +235,6 @@ public class NotePadWindow(nint ptr) : MonoBehaviour(ptr)
         if (!_focused) return;
         Input.ResetInputAxes();
 
-        // Keep TMP color in sync with the setting (may be changed while open).
         if (_displayTmp != null)
             _displayTmp.color = GetTextColor();
 
@@ -269,7 +266,6 @@ public class NotePadWindow(nint ptr) : MonoBehaviour(ptr)
             _cursorPos = endPos; changed = true;
         }
 
-        // Backspace with hold-to-repeat
         if (backspaceHeld)
         {
             _backspaceHeld += Time.deltaTime;
@@ -284,7 +280,6 @@ public class NotePadWindow(nint ptr) : MonoBehaviour(ptr)
         }
         else { _backspaceHeld = 0f; }
 
-        // Delete with hold-to-repeat
         if (deleteHeld)
         {
             _deleteHeld += Time.deltaTime;
@@ -298,7 +293,6 @@ public class NotePadWindow(nint ptr) : MonoBehaviour(ptr)
         }
         else { _deleteHeld = 0f; }
 
-        // Enter — new line
         if (enter)
         {
             string newContent = _content.Insert(_cursorPos, "\n");
@@ -310,7 +304,6 @@ public class NotePadWindow(nint ptr) : MonoBehaviour(ptr)
             }
         }
 
-        // Printable characters
         foreach (char c in typed)
         {
             if (c == '\b' || c == '\r' || c == '\n') continue;
@@ -385,16 +378,10 @@ public class NotePadWindow(nint ptr) : MonoBehaviour(ptr)
     {
         if (_displayTmp == null) return;
 
-        // Insert cursor caret into the plain string before colorising.
         string display = _content;
         if (_focused && _cursorVisible)
             display = display.Insert(Mathf.Clamp(_cursorPos, 0, display.Length), "|");
-
-        // Apply role-name color tags.
         display = RoleColorizer.Apply(display);
-
-        // Wrap in a plain-text color tag when Black is selected (other colors
-        // are set directly on the TMP component and don't need a wrapper).
         string? colorTag = GetPlainTextColorTag();
         if (colorTag != null)
             display = $"<color={colorTag}>{display}</color>";
@@ -402,11 +389,8 @@ public class NotePadWindow(nint ptr) : MonoBehaviour(ptr)
         _displayTmp.text = display;
     }
 
-    // ── Ruled-line constants ──────────────────────────────────────────────────
     private const int   RuledLineCount  = 13;
     private const float RuledLineHeight = 0.006f;   // thickness of each line
-
-    /// <summary>Creates a 1×1 white texture used for solid-colour quads.</summary>
     private static Texture2D MakeWhiteTex()
     {
         var t = new Texture2D(1, 1, TextureFormat.RGBA32, false);
@@ -419,7 +403,6 @@ public class NotePadWindow(nint ptr) : MonoBehaviour(ptr)
     {
         gameObject.layer = 5;
 
-        // ── Background ────────────────────────────────────────────────────────
         var bgSprite = LoadSprite(GetWindowResourceName());
         if (bgSprite != null)
         {
@@ -433,7 +416,6 @@ public class NotePadWindow(nint ptr) : MonoBehaviour(ptr)
             sr.sortingOrder = 1000;
         }
 
-        // ── Text field ────────────────────────────────────────────────────────
         var template = HudManager.Instance?.Chat?.freeChatField?.textArea;
         if (template == null) { Log.LogError("Chat template missing!"); return; }
 
@@ -463,30 +445,17 @@ public class NotePadWindow(nint ptr) : MonoBehaviour(ptr)
                 rt.sizeDelta = new Vector2(TextWidth, 20f);
             }
 
-            // ── Ruled lines ───────────────────────────────────────────────────
-            // Measure real line height by forcing a single-line mesh update,
-            // then multiply by the text object's local scale to get window-space units.
             _displayTmp.text = "A";
             _displayTmp.ForceMeshUpdate();
             float tmpLineHeight = 0f;
             if (_displayTmp.textInfo.lineCount > 0)
                 tmpLineHeight = _displayTmp.textInfo.lineInfo[0].lineHeight;
             _displayTmp.text = "";
-
-            // textInfo lineHeight is in TMP local units. Scale to window local space.
             float textScale   = dispGo.transform.localScale.y; // 0.7
             float lineSpacing = tmpLineHeight * textScale;
-
-            // The text object's pivot is top-left at (TextLocalX, TextLocalY).
-            // The first line's baseline sits one lineHeight below the top.
-            // Add a small downward offset (0.03) so the rule is under the text, not through it.
             float firstLineY = TextLocalY - lineSpacing + 0.01f;
-
-            // Line width: match the text rect width scaled into window space,
-            // centred on the text's left edge + half-width.
             float lineWidth = TextWidth * textScale;
             float lineCentreX = TextLocalX + lineWidth * 0.5f;
-
             var lineTex    = MakeWhiteTex();
             var lineSprite = Sprite.Create(lineTex, new Rect(0, 0, 1, 1), new Vector2(0.5f, 0.5f), 1f);
             var lineColor  = new Color(0.45f, 0.55f, 0.75f, 0.35f);
@@ -505,7 +474,6 @@ public class NotePadWindow(nint ptr) : MonoBehaviour(ptr)
             }
         }
 
-        // ── Clear button ──────────────────────────────────────────────────────
         var clearSprite      = LoadSprite("NotePadMod.Resources.notepad_clear.png");
         var clearHoverSprite = LoadSprite("NotePadMod.Resources.notepad_clear_hover.png");
         if (clearSprite != null)
