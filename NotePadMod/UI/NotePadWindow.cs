@@ -98,6 +98,17 @@ public class NotePadWindow(nint ptr) : MonoBehaviour(ptr)
         return new Vector3(0.4f, 1.5f, WindowZ);
     }
 
+    /// <summary>
+    /// Immediately zeros the local player's rigidbody velocity so they don't
+    /// keep sliding when the notepad is opened or closed.
+    /// </summary>
+    private static void StopLocalPlayer()
+    {
+        var player = PlayerControl.LocalPlayer;
+        if (player?.MyPhysics?.body != null)
+            player.MyPhysics.body.velocity = Vector2.zero;
+    }
+
     public static void Toggle()
     {
         if (IsOpen) { Close(); return; }
@@ -106,27 +117,56 @@ public class NotePadWindow(nint ptr) : MonoBehaviour(ptr)
         Open();
     }
 
+    private static void EnsureInstance()
+    {
+        if (_instance != null) return;
+        if (HudManager.Instance == null) return;
+
+        var go = new GameObject("NotePadWindow");
+        go.SetActive(false);
+        go.transform.SetParent(HudManager.Instance.Chat.transform.parent, false);
+        _instance = go.AddComponent<NotePadWindow>();
+    }
+
     public static void Open()
     {
-        if (_instance == null)
-        {
-            var go = new GameObject("NotePadWindow");
-            go.transform.SetParent(HudManager.Instance.Chat.transform.parent, false);
-            _instance = go.AddComponent<NotePadWindow>();
-        }
+        EnsureInstance();
+        if (_instance == null) return;
+
         _instance.transform.localPosition = GetWindowPositionRelativeToButton();
         _instance.gameObject.SetActive(true);
         _instance.transform.SetAsLastSibling();
         _instance._focused = true;
 
-        // Flush held inputs so movement/zoom doesn't carry over.
+        // Stop the player in place and flush held inputs so movement/zoom
+        // doesn't carry over into the notepad session.
+        StopLocalPlayer();
         Input.ResetInputAxes();
+    }
+
+    public static void AppendText(string text)
+    {
+        EnsureInstance();
+        if (_instance == null) return;
+
+        string separator = _instance._content.Length > 0 ? "\n" : "";
+        string newContent = _instance._content + separator + text;
+
+        if (_instance.GetLineCount(newContent) <= MaxLines)
+            _instance._content = newContent;
+
+        _instance._cursorPos = _instance._content.Length;
+        _instance.UpdateDisplay();
     }
 
     public static void Close()
     {
         if (_instance != null) _instance._focused = false;
         _instance?.gameObject.SetActive(false);
+
+        // Stop the player again so they don't lurch forward when control
+        // is returned (FixedUpdate will resume next frame).
+        StopLocalPlayer();
 
         // Flush again so the game doesn't lurch when input is re-enabled.
         Input.ResetInputAxes();
@@ -440,7 +480,7 @@ public class NotePadWindow(nint ptr) : MonoBehaviour(ptr)
             // The text object's pivot is top-left at (TextLocalX, TextLocalY).
             // The first line's baseline sits one lineHeight below the top.
             // Add a small downward offset (0.03) so the rule is under the text, not through it.
-            float firstLineY = TextLocalY - lineSpacing + 0.03f;
+            float firstLineY = TextLocalY - lineSpacing + 0.01f;
 
             // Line width: match the text rect width scaled into window space,
             // centred on the text's left edge + half-width.

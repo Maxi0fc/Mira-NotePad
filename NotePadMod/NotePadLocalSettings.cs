@@ -1,27 +1,18 @@
 using BepInEx.Configuration;
 using MiraAPI.LocalSettings;
 using MiraAPI.LocalSettings.Attributes;
-using TownOfUs.Assets;
-using UnityEngine;
 using MiraAPI.Utilities.Assets;
+using UnityEngine;
+
 
 namespace NotePadMod;
 
-/// <summary>
-/// Which HUD row the notepad button should live in.
-/// </summary>
 public enum NotepadButtonRow
 {
-    /// <summary>Top row — same row as Map, Settings, Chat.</summary>
     TopRow = 0,
-
-    /// <summary>Second row — same row as Wiki and Zoom.</summary>
     SecondRow = 1,
 }
 
-/// <summary>
-/// Color of the notepad text.
-/// </summary>
 public enum NotepadTextColor
 {
     Black = 0,
@@ -33,9 +24,6 @@ public enum NotepadTextColor
     Grey = 6,
 }
 
-/// <summary>
-/// Visual skin of the notepad window background.
-/// </summary>
 public enum NotepadWindowSkin
 {
     Grey = 0,
@@ -53,10 +41,6 @@ public sealed class NotePadLocalSettings(ConfigFile config) : LocalSettingsTab(c
         TabIcon = NotepadIcon
     };
 
-    /// <summary>
-    /// Which HUD row the Notepad button is placed in.
-    /// Change takes effect after the HUD is next rebuilt (map/lobby transition).
-    /// </summary>
     [LocalEnumSetting]
     public ConfigEntry<NotepadButtonRow> ButtonRow { get; private set; } =
         config.Bind(
@@ -64,23 +48,24 @@ public sealed class NotePadLocalSettings(ConfigFile config) : LocalSettingsTab(c
             "Button Row",
             NotepadButtonRow.SecondRow);
 
-    /// <summary>
-    /// Color used for plain (non-role) notepad text.
-    /// </summary>
     [LocalEnumSetting]
     public ConfigEntry<NotepadTextColor> TextColor { get; private set; } =
         config.Bind(
             "Appearance",
             "Text Color",
-            NotepadTextColor.Black);
+            NotepadTextColor.White);
 
-    /// <summary>
-    /// Visual skin for the notepad window background sprite.
-    /// </summary>
     [LocalEnumSetting]
     public ConfigEntry<NotepadWindowSkin> WindowSkin { get; private set; } =
         config.Bind(
             "Appearance",
             "Window Skin",
             NotepadWindowSkin.Grey);
+
+    [LocalToggleSetting]
+    public ConfigEntry<bool> AutoAddRoleInfo { get; private set; } =
+        config.Bind(
+            "Behavior",
+            "Auto-Add Role Info",
+            true);
 }
