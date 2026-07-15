@@ -117,14 +117,22 @@ public class NotePadWindow(nint ptr) : MonoBehaviour(ptr)
         Open();
     }
 
+    private static void EnsureInstance()
+    {
+        if (_instance != null) return;
+        if (HudManager.Instance == null) return;
+
+        var go = new GameObject("NotePadWindow");
+        go.SetActive(false);
+        go.transform.SetParent(HudManager.Instance.Chat.transform.parent, false);
+        _instance = go.AddComponent<NotePadWindow>();
+    }
+
     public static void Open()
     {
-        if (_instance == null)
-        {
-            var go = new GameObject("NotePadWindow");
-            go.transform.SetParent(HudManager.Instance.Chat.transform.parent, false);
-            _instance = go.AddComponent<NotePadWindow>();
-        }
+        EnsureInstance();
+        if (_instance == null) return;
+
         _instance.transform.localPosition = GetWindowPositionRelativeToButton();
         _instance.gameObject.SetActive(true);
         _instance.transform.SetAsLastSibling();
@@ -134,6 +142,21 @@ public class NotePadWindow(nint ptr) : MonoBehaviour(ptr)
         // doesn't carry over into the notepad session.
         StopLocalPlayer();
         Input.ResetInputAxes();
+    }
+
+    public static void AppendText(string text)
+    {
+        EnsureInstance();
+        if (_instance == null) return;
+
+        string separator = _instance._content.Length > 0 ? "\n" : "";
+        string newContent = _instance._content + separator + text;
+
+        if (_instance.GetLineCount(newContent) <= MaxLines)
+            _instance._content = newContent;
+
+        _instance._cursorPos = _instance._content.Length;
+        _instance.UpdateDisplay();
     }
 
     public static void Close()
