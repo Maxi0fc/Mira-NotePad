@@ -118,7 +118,19 @@ public static class HudManagerPatch
             HudManagerPatches.ExtraUiGrid?.ArrangeChilds();
         }
 
-        NotePadButtonObj!.SetActive(true);
+        // Hide during meeting/exile animations by matching the MapButton's visibility.
+        // The game hides the top-right buttons during meeting intro and exile sequences;
+        // we mirror that so the notepad doesn't stay visible when everything else is hidden.
+        bool show = true;
+        if (ExileController.Instance)
+        {
+            show = false;
+        }
+        else if (instance.MapButton != null && !instance.MapButton.gameObject.activeSelf)
+        {
+            show = false;
+        }
+        NotePadButtonObj!.SetActive(show);
     }
 
     // ── Harmony patches ───────────────────────────────────────────────────────
@@ -139,32 +151,20 @@ public static class HudManagerPatch
     }
 
     [HarmonyPatch(typeof(MeetingHud), nameof(MeetingHud.Start))]
-[HarmonyPostfix]
-public static void MeetingHudStartPatch(MeetingHud __instance)
-{
-    if (NotePadButtonObj == null) return;
-
-    NotePadButtonObj.SetActive(true);
-    NotePadButtonObj.transform.localPosition = new Vector3(0f, 0.021f, -80f);
-
-    
-    // Ensure all SpriteRenderers are enabled
-    foreach (var sr in NotePadButtonObj.GetComponentsInChildren<SpriteRenderer>(true))
-        sr.enabled = true;
-    
-    // Also check and enable the button's main renderer
-    var mainSpriteRenderer = NotePadButtonObj.GetComponent<SpriteRenderer>();
-    if (mainSpriteRenderer != null)
-        mainSpriteRenderer.enabled = true;
-}
+    [HarmonyPostfix]
+    public static void MeetingHudStartPatch(MeetingHud __instance)
+    {
+        if (NotePadButtonObj == null) return;
+        NotePadButtonObj.SetActive(false);
+    }
 
     [HarmonyPatch(typeof(MeetingHud), nameof(MeetingHud.Close))]
     [HarmonyPostfix]
     public static void MeetingHudClosePatch()
     {
         if (NotePadButtonObj == null) return;
-        NotePadButtonObj.SetActive(true);
-        NotePadButtonObj.transform.localPosition = new Vector3(0f, 0.021f, -80f);
+        NotePadButtonObj.SetActive(false);
+        NotePadButtonObj.transform.localPosition = new Vector3(0f, 0.021f, 1f);
 
     }
 

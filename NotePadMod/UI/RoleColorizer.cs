@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Text.RegularExpressions;
 using MiraAPI.Roles;
+using TMPro;
 using UnityEngine;
 namespace NotePadMod.UI;
 /// <summary>
@@ -11,10 +12,12 @@ public static class RoleColorizer
 {
     private static readonly BepInEx.Logging.ManualLogSource Log = BepInEx.Logging.Logger.CreateLogSource("RoleColorizer");
     private static Dictionary<string, string>? _roleColors;
+    private static Dictionary<string, string>? _roleIcons;
     private static Regex? _roleRegex;
     public static void Refresh()
     {
         _roleColors = new Dictionary<string, string>();
+        _roleIcons = new Dictionary<string, string>();
         int count = 0;
         foreach (var role in CustomRoleManager.AllRoles)
         {
@@ -22,7 +25,17 @@ public static class RoleColorizer
             string name = customRole.RoleName?.Trim() ?? "";
             if (name.Length == 0) continue;
             string hex = ColorUtility.ToHtmlStringRGB(customRole.RoleColor);
-            _roleColors[name.ToLowerInvariant()] = hex;
+            string key = name.ToLowerInvariant();
+            _roleColors[key] = hex;
+
+            string? iconTmp = null;
+            if (customRole.Configuration.IconTmp is TMP_SpriteAsset spriteAsset)
+            {
+                iconTmp = $"<sprite name=\"{spriteAsset.name}\">";
+            }
+            if (!string.IsNullOrEmpty(iconTmp))
+                _roleIcons[key] = iconTmp;
+
             count++;
         }
         Log.LogInfo($"[RoleColorizer] Loaded {count} roles");
@@ -50,13 +63,29 @@ public static class RoleColorizer
     }
     public static string Apply(string raw)
     {
+        // Same lazy-timing issue ModifierColorizer had: CustomRoleManager.AllRoles may not
+        // be fully populated yet the first time Refresh() runs (e.g. at ShipStatus.Start),
+        // so retry here on every call until it actually finds roles.
+        if (!IsReady)
+        {
+            Refresh();
+        }
+
         if (_roleColors == null || _roleRegex == null || raw.Length == 0)
             return raw;
         return _roleRegex.Replace(raw, m =>
         {
             string key = m.Value.ToLowerInvariant();
             if (_roleColors.TryGetValue(key, out string? hex))
-                return $"<b><color=#{hex}>{m.Value}</color></b>";
+            {
+                string icon = "";
+                if (NotePadPlugin.Settings.ShowRoleIcons.Value &&
+                    _roleIcons != null && _roleIcons.TryGetValue(key, out string? iconTmp))
+                {
+                    icon = iconTmp;
+                }
+                return $"{icon}<b><color=#{hex}>{m.Value}</color></b>";
+            }
             return m.Value;
         });
     }

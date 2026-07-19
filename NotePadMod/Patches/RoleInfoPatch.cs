@@ -102,6 +102,6 @@ public static class RoleInfoPatch
         if (EmptyResultTexts.Contains(plainMessage)) return;
         if (EmptyResultTemplates.Any(template => template.IsMatch(plainMessage))) return;
 
-        NotePadWindow.AppendText($"{message}");
+        NotePadWindow.AppendText($"{message}\n");
     }
 }

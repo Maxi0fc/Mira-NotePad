@@ -392,9 +392,7 @@ public class NotePadWindow(nint ptr) : MonoBehaviour(ptr)
 
         // Apply role-name color tags.
         display = RoleColorizer.Apply(display);
-
-        // Wrap in a plain-text color tag when Black is selected (other colors
-        // are set directly on the TMP component and don't need a wrapper).
+        display = ModifierColorizer.Apply(display);
         string? colorTag = GetPlainTextColorTag();
         if (colorTag != null)
             display = $"<color={colorTag}>{display}</color>";
@@ -446,6 +444,9 @@ public class NotePadWindow(nint ptr) : MonoBehaviour(ptr)
         _displayTmp = dispGo.GetComponent<TextMeshPro>();
         if (_displayTmp != null)
         {
+            if (_displayTmp.spriteAsset == null)
+                _displayTmp.spriteAsset = TMP_Settings.defaultSpriteAsset;
+
             _displayTmp.fontSize           = 2.2f;
             _displayTmp.color              = GetTextColor();
             _displayTmp.enableWordWrapping = true;
