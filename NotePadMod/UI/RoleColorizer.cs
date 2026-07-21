@@ -2,12 +2,10 @@ using System.Collections.Generic;
 using System.Text;
 using System.Text.RegularExpressions;
 using MiraAPI.Roles;
-using TMPro;
+using TownOfUs.Utilities;
 using UnityEngine;
 namespace NotePadMod.UI;
-/// <summary>
-/// Scans notepad text for role names and wraps them in bold + color TMP tags.
-/// </summary>
+
 public static class RoleColorizer
 {
     private static readonly BepInEx.Logging.ManualLogSource Log = BepInEx.Logging.Logger.CreateLogSource("RoleColorizer");
@@ -19,7 +17,7 @@ public static class RoleColorizer
         _roleColors = new Dictionary<string, string>();
         _roleIcons = new Dictionary<string, string>();
         int count = 0;
-        foreach (var role in CustomRoleManager.AllRoles)
+        foreach (var role in MiscUtils.AllRoles)
         {
             if (role is not ICustomRole customRole) continue;
             string name = customRole.RoleName?.Trim() ?? "";
@@ -28,11 +26,7 @@ public static class RoleColorizer
             string key = name.ToLowerInvariant();
             _roleColors[key] = hex;
 
-            string? iconTmp = null;
-            if (customRole.Configuration.IconTmp is TMP_SpriteAsset spriteAsset)
-            {
-                iconTmp = $"<sprite name=\"{spriteAsset.name}\">";
-            }
+            string iconTmp = MiscUtils.GetRoleTmpIcon(role);
             if (!string.IsNullOrEmpty(iconTmp))
                 _roleIcons[key] = iconTmp;
 
@@ -63,9 +57,6 @@ public static class RoleColorizer
     }
     public static string Apply(string raw)
     {
-        // Same lazy-timing issue ModifierColorizer had: CustomRoleManager.AllRoles may not
-        // be fully populated yet the first time Refresh() runs (e.g. at ShipStatus.Start),
-        // so retry here on every call until it actually finds roles.
         if (!IsReady)
         {
             Refresh();

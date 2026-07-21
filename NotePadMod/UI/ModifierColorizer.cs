@@ -6,9 +6,9 @@ using System.Text;
 using System.Text.RegularExpressions;
 using MiraAPI.Modifiers;
 using MiraAPI.Modifiers.Types;
-using TMPro;
 using TownOfUs.Modifiers;
 using TownOfUs.Modifiers.Game;
+using TownOfUs.Utilities;
 using UnityEngine;
 namespace NotePadMod.UI;
 
@@ -60,6 +60,7 @@ public static class ModifierColorizer
 
                 string name = instance.ModifierName?.Trim() ?? "";
                 if (name.Length == 0) continue;
+
                 ModifierUiConfiguration config;
                 try
                 {
@@ -71,9 +72,8 @@ public static class ModifierColorizer
                     continue;
                 }
 
-                string hex = ColorUtility.ToHtmlStringRGB(config.UiColor);
                 string key = name.ToLowerInvariant();
-                _modifierColors[key] = hex;
+                _modifierColors[key] = ColorUtility.ToHtmlStringRGB(MiscUtils.GetModifierColour(instance));
 
                 if (config.PopUpIconTmp != null)
                 {
