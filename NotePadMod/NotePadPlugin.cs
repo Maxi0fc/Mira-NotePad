@@ -7,7 +7,7 @@ using MiraAPI.PluginLoading;
 
 namespace NotePadMod;
 
-[BepInPlugin("maxi.notepad", "Notepad", "1.3.0")]
+[BepInPlugin("maxi.notepad", "Notepad", "1.3.1")]
 [BepInDependency("gg.reactor.api")]
 [BepInDependency("mira.api")]
 public class NotePadPlugin : BasePlugin, IMiraPlugin
@@ -22,7 +22,7 @@ public class NotePadPlugin : BasePlugin, IMiraPlugin
     {
         Instance = this;
         Settings = new NotePadLocalSettings(Config);
-        ReactorCredits.Register("NotePad", "1.3.0", false, ReactorCredits.AlwaysShow);
+        ReactorCredits.Register("NotePad", "1.3.1", false, ReactorCredits.AlwaysShow);
 
         new Harmony("maxi.notepad").PatchAll();
         Log.LogInfo("[NotepadPlugin] Loaded!");

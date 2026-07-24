@@ -16,6 +16,7 @@ public static class GameFlowPatch
     public static void OnShipStart()
     {
         RoleColorizer.Refresh();
+        ModifierColorizer.Refresh();
         NotePadWindow.Close();
     }
     [HarmonyPatch(typeof(LobbyBehaviour), nameof(LobbyBehaviour.Start))]
