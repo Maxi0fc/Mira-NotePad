@@ -42,13 +42,13 @@ public static class ModifierColorizer
             foreach (var type in types)
             {
                 if (type.IsAbstract || type.IsInterface) continue;
-                if (!typeof(TouGameModifier).IsAssignableFrom(type)) continue;
+                if (!typeof(TouBaseGameModifier).IsAssignableFrom(type)) continue;
                 if (type.GetConstructor(Type.EmptyTypes) == null) continue;
 
-                TouGameModifier? instance;
+                TouBaseGameModifier? instance;
                 try
                 {
-                    instance = Activator.CreateInstance(type) as TouGameModifier;
+                    instance = Activator.CreateInstance(type) as TouBaseGameModifier;
                 }
                 catch (Exception ex)
                 {
