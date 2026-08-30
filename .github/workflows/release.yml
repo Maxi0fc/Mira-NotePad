@@ -1,0 +1,197 @@
+name: Build and Release
+
+on:
+  pull_request:
+    types:
+      - closed
+    branches:
+      - main
+
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: "Branch to build"
+        required: true
+        default: "main"
+        type: string
+
+      pr_number:
+        description: "PR number to use for release title and description"
+        required: false
+        type: string
+
+permissions:
+  contents: write
+  pull-requests: read
+
+jobs:
+  build-and-release:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (
+        github.event.pull_request.merged == true &&
+        github.event.pull_request.head.ref == 'dev'
+      )
+
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.branch || 'main' }}
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "6.0.x"
+
+      - name: Find project file
+        id: project
+        shell: pwsh
+        run: |
+          $projects = Get-ChildItem -Path . -Filter *.csproj -Recurse
+
+          if ($projects.Count -eq 0) {
+            Write-Error "No .csproj file was found."
+            exit 1
+          }
+
+          if ($projects.Count -gt 1) {
+            Write-Host "Multiple projects found:"
+            $projects | ForEach-Object { Write-Host $_.FullName }
+
+            $project = $projects |
+              Where-Object { $_.Name -eq "NotePadMod.csproj" } |
+              Select-Object -First 1
+
+            if ($null -eq $project) {
+              $project = $projects | Select-Object -First 1
+            }
+          }
+          else {
+            $project = $projects[0]
+          }
+
+          Write-Host "Using project: $($project.FullName)"
+
+          "path=$($project.FullName)" >> $env:GITHUB_OUTPUT
+          "directory=$($project.DirectoryName)" >> $env:GITHUB_OUTPUT
+          "name=$($project.BaseName)" >> $env:GITHUB_OUTPUT
+
+      - name: Get version from csproj
+        id: version
+        shell: pwsh
+        run: |
+          $projectPath = "${{ steps.project.outputs.path }}"
+
+          [xml]$project = Get-Content $projectPath
+
+          $version = $project.Project.PropertyGroup.Version |
+            Where-Object { -not [string]::IsNullOrWhiteSpace($_) } |
+            Select-Object -First 1
+
+          if ([string]::IsNullOrWhiteSpace($version)) {
+            Write-Error "Could not find <Version> in $projectPath"
+            exit 1
+          }
+
+          Write-Host "Project version: $version"
+
+          "version=$version" >> $env:GITHUB_OUTPUT
+
+      - name: Get PR information
+        id: pr
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          EVENT_NAME: ${{ github.event_name }}
+          PR_NUMBER: ${{ inputs.pr_number }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+          VERSION: ${{ steps.version.outputs.version }}
+          REPOSITORY: ${{ github.repository }}
+        shell: pwsh
+        run: |
+          if ($env:EVENT_NAME -eq "pull_request") {
+            $title = $env:PR_TITLE
+            $body = $env:PR_BODY
+          }
+          elseif (-not [string]::IsNullOrWhiteSpace($env:PR_NUMBER)) {
+            $pr = gh pr view $env:PR_NUMBER `
+              --repo $env:REPOSITORY `
+              --json title,body |
+              ConvertFrom-Json
+
+            $title = $pr.title
+            $body = $pr.body
+          }
+          else {
+            $title = "Mira-NotePad v$($env:VERSION)"
+            $body = "Manual release of Mira-NotePad v$($env:VERSION)."
+          }
+
+          $titleDelimiter = "TITLE_$([guid]::NewGuid().ToString())"
+          $bodyDelimiter = "BODY_$([guid]::NewGuid().ToString())"
+
+          "title<<$titleDelimiter" >> $env:GITHUB_OUTPUT
+          $title >> $env:GITHUB_OUTPUT
+          "$titleDelimiter" >> $env:GITHUB_OUTPUT
+
+          "body<<$bodyDelimiter" >> $env:GITHUB_OUTPUT
+          $body >> $env:GITHUB_OUTPUT
+          "$bodyDelimiter" >> $env:GITHUB_OUTPUT
+
+      - name: Restore dependencies
+        run: dotnet restore "${{ steps.project.outputs.path }}"
+
+      - name: Build DLL
+        run: |
+          dotnet build "${{ steps.project.outputs.path }}" `
+            --configuration Release `
+            --no-restore
+
+      - name: Find built DLL
+        id: dll
+        shell: pwsh
+        run: |
+          $projectName = "${{ steps.project.outputs.name }}"
+
+          $dll = Get-ChildItem -Path . `
+            -Filter "$projectName.dll" `
+            -Recurse `
+            -File |
+            Where-Object {
+              $_.FullName -match "\\bin\\Release\\"
+            } |
+            Select-Object -First 1
+
+          if ($null -eq $dll) {
+            Write-Error "Could not find $projectName.dll in the Release build output."
+            exit 1
+          }
+
+          Write-Host "Found DLL:"
+          Write-Host $dll.FullName
+
+          "path=$($dll.FullName)" >> $env:GITHUB_OUTPUT
+
+      - name: Create Official Latest Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ steps.version.outputs.version }}
+          RELEASE_TITLE: ${{ steps.pr.outputs.title }}
+          RELEASE_BODY: ${{ steps.pr.outputs.body }}
+          REPOSITORY: ${{ github.repository }}
+          SHA: ${{ github.sha }}
+          DLL_PATH: ${{ steps.dll.outputs.path }}
+        shell: pwsh
+        run: |
+          $tag = "v$($env:VERSION)"
+
+          gh release create $tag `
+            "$env:DLL_PATH" `
+            --repo $env:REPOSITORY `
+            --target $env:SHA `
+            --title $env:RELEASE_TITLE `
+            --notes $env:RELEASE_BODY `
+            --latest
