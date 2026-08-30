@@ -1,4 +1,5 @@
 using System.Reflection;
+using NotePadMod.Assets;
 using Reactor.Utilities.Attributes;
 using UnityEngine;
 using UnityEngine.Events;
@@ -25,14 +26,18 @@ public class NotePadWindow(nint ptr) : MonoBehaviour(ptr)
     private float _backspaceHeld = 0f;
     private float _deleteHeld    = 0f;
 
+    // The bundle-authored "Notepad" prefab instance (Background, CloseButton,
+    // Title, Textbox, Lines) and its background renderer, used both for the
+    // window-skin swap and for computing click-inside/outside bounds.
+    private GameObject?    _panelInstance;
+    private SpriteRenderer? _backgroundRenderer;
+
     private const float HoldDelay  = 0.4f;
     private const float HoldRepeat = 0.05f;
     private const int   MaxLines   = 13;
 
     // Window layout
     private const float WindowZ    = -50f;
-    private const float TextLocalX = -1.8f;
-    private const float TextLocalY =  1.0f;
     private const float TextWidth  =  3.5f;
 
     /// <summary>
@@ -221,8 +226,22 @@ public class NotePadWindow(nint ptr) : MonoBehaviour(ptr)
         if (mouseDown)
         {
             Vector3 mouseWorld = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-            Vector3 localClick = transform.InverseTransformPoint(mouseWorld);
-            if (Mathf.Abs(localClick.x) < 2.1f && Mathf.Abs(localClick.y) < 1.9f)
+
+            bool insideWindow;
+            if (_backgroundRenderer != null)
+            {
+                // Use the bundled Background sprite's actual world-space bounds
+                // so this keeps working regardless of the prefab's authored size.
+                insideWindow = _backgroundRenderer.bounds.Contains(
+                    new Vector3(mouseWorld.x, mouseWorld.y, _backgroundRenderer.bounds.center.z));
+            }
+            else
+            {
+                Vector3 localClick = transform.InverseTransformPoint(mouseWorld);
+                insideWindow = Mathf.Abs(localClick.x) < 2.1f && Mathf.Abs(localClick.y) < 1.9f;
+            }
+
+            if (insideWindow)
             {
                 _focused = true;
                 PlaceCursorAtMouse();
@@ -400,113 +419,102 @@ public class NotePadWindow(nint ptr) : MonoBehaviour(ptr)
         _displayTmp.text = display;
     }
 
-    // ── Ruled-line constants ──────────────────────────────────────────────────
-    private const int   RuledLineCount  = 13;
-    private const float RuledLineHeight = 0.006f;   // thickness of each line
-
-    /// <summary>Creates a 1×1 white texture used for solid-colour quads.</summary>
-    private static Texture2D MakeWhiteTex()
+    /// <summary>Recursively sets a GameObject and all its children to the given layer.</summary>
+    private static void SetLayerRecursively(GameObject go, int layer)
     {
-        var t = new Texture2D(1, 1, TextureFormat.RGBA32, false);
-        t.SetPixel(0, 0, Color.white);
-        t.Apply();
-        return t;
+        go.layer = layer;
+        foreach (Transform child in go.transform)
+            SetLayerRecursively(child.gameObject, layer);
+    }
+
+    /// <summary>
+    /// Swaps the bundled Background sprite for one of the two embedded window
+    /// skins (grey/black) according to the current setting. The bundle only
+    /// ships the single "freePlay_base" look, so the skin option is applied
+    /// as a texture swap on top of it, same as it was applied before porting.
+    /// </summary>
+    private void ApplyWindowSkin()
+    {
+        if (_backgroundRenderer == null) return;
+        var skinSprite = LoadSprite(GetWindowResourceName());
+        if (skinSprite != null)
+            _backgroundRenderer.sprite = skinSprite;
     }
 
     private void Start()
     {
         gameObject.layer = 5;
 
-        // ── Background ────────────────────────────────────────────────────────
-        var bgSprite = LoadSprite(GetWindowResourceName());
-        if (bgSprite != null)
+        // ── Bundled panel (Background, CloseButton, Title, Textbox, Lines) ──────
+        var prefab = NotepadAssets.Notepad.LoadAsset();
+        if (prefab == null)
         {
-            var bgGo = new GameObject("BG");
-            bgGo.transform.SetParent(transform, false);
-            bgGo.transform.localPosition = Vector3.zero;
-            bgGo.transform.localScale    = new Vector3(0.5f, 0.5f, 1f);
-            bgGo.layer = 5;
-            var sr = bgGo.AddComponent<SpriteRenderer>();
-            sr.sprite       = bgSprite;
-            sr.sortingOrder = 1000;
+            Log.LogError("Notepad prefab failed to load from the bundle!");
+            return;
         }
 
-        // ── Text field ────────────────────────────────────────────────────────
-        var template = HudManager.Instance?.Chat?.freeChatField?.textArea;
-        if (template == null) { Log.LogError("Chat template missing!"); return; }
+        _panelInstance = Object.Instantiate(prefab, transform);
+        _panelInstance.name = "Panel";
+        _panelInstance.transform.localPosition = Vector3.zero;
+        // The bundle was authored in a different project's HUD scale; if it
+        // renders too large/small in-game, tune this scale factor.
+        _panelInstance.transform.localScale = Vector3.one;
+        SetLayerRecursively(_panelInstance, 5);
 
-        var dispGo = Object.Instantiate(template.outputText.gameObject, transform);
-        dispGo.name  = "NoteText";
-        dispGo.layer = 5;
-        dispGo.transform.localPosition = new Vector3(TextLocalX, TextLocalY, -0.1f);
-        dispGo.transform.localScale    = new Vector3(0.7f, 0.7f, 1f);
+        var backgroundT = _panelInstance.transform.Find("Background");
+        _backgroundRenderer = backgroundT != null ? backgroundT.GetComponent<SpriteRenderer>() : null;
+        ApplyWindowSkin();
 
-        _displayTmp = dispGo.GetComponent<TextMeshPro>();
-        if (_displayTmp != null)
+        // ── Text field (bundle's Textbox/Text_TMP) ──────────────────────────────
+        var textboxT = _panelInstance.transform.Find("Textbox");
+        var textTmpT = textboxT != null ? textboxT.Find("Text_TMP") : null;
+        _displayTmp = textTmpT != null ? textTmpT.GetComponent<TextMeshPro>() : null;
+
+        if (_displayTmp == null)
+        {
+            Log.LogError("Text_TMP missing from the Notepad prefab!");
+        }
+        else
         {
             if (_displayTmp.spriteAsset == null)
                 _displayTmp.spriteAsset = TMP_Settings.defaultSpriteAsset;
 
-            _displayTmp.fontSize           = 2.2f;
             _displayTmp.color              = GetTextColor();
-            _displayTmp.enableWordWrapping = true;
-            _displayTmp.overflowMode       = TextOverflowModes.Overflow;
-            _displayTmp.enableAutoSizing   = false;
-            _displayTmp.alignment          = TextAlignmentOptions.TopLeft;
-            _displayTmp.richText           = true;
-            _displayTmp.text               = "";
-            _displayTmp.sortingOrder       = 1002;
+            _displayTmp.enableWordWrapping  = true;
+            _displayTmp.overflowMode        = TextOverflowModes.Overflow;
+            _displayTmp.enableAutoSizing    = false;
+            _displayTmp.alignment           = TextAlignmentOptions.TopLeft;
+            _displayTmp.richText            = true;
+            _displayTmp.text                = "";
 
             var rt = _displayTmp.GetComponent<RectTransform>();
             if (rt != null)
-            {
-                rt.pivot     = new Vector2(0f, 1f);
-                rt.sizeDelta = new Vector2(TextWidth, 20f);
-            }
-
-            // ── Ruled lines ───────────────────────────────────────────────────
-            // Measure real line height by forcing a single-line mesh update,
-            // then multiply by the text object's local scale to get window-space units.
-            _displayTmp.text = "A";
-            _displayTmp.ForceMeshUpdate();
-            float tmpLineHeight = 0f;
-            if (_displayTmp.textInfo.lineCount > 0)
-                tmpLineHeight = _displayTmp.textInfo.lineInfo[0].lineHeight;
-            _displayTmp.text = "";
-
-            // textInfo lineHeight is in TMP local units. Scale to window local space.
-            float textScale   = dispGo.transform.localScale.y; // 0.7
-            float lineSpacing = tmpLineHeight * textScale;
-
-            // The text object's pivot is top-left at (TextLocalX, TextLocalY).
-            // The first line's baseline sits one lineHeight below the top.
-            // Add a small downward offset (0.03) so the rule is under the text, not through it.
-            float firstLineY = TextLocalY - lineSpacing + 0.01f;
-
-            // Line width: match the text rect width scaled into window space,
-            // centred on the text's left edge + half-width.
-            float lineWidth = TextWidth * textScale;
-            float lineCentreX = TextLocalX + lineWidth * 0.5f;
-
-            var lineTex    = MakeWhiteTex();
-            var lineSprite = Sprite.Create(lineTex, new Rect(0, 0, 1, 1), new Vector2(0.5f, 0.5f), 1f);
-            var lineColor  = new Color(0.45f, 0.55f, 0.75f, 0.35f);
-
-            for (int i = 0; i < RuledLineCount; i++)
-            {
-                var lineGo = new GameObject($"RuledLine_{i}");
-                lineGo.transform.SetParent(transform, false);
-                lineGo.transform.localPosition = new Vector3(lineCentreX, firstLineY - i * lineSpacing, -0.05f);
-                lineGo.transform.localScale    = new Vector3(lineWidth, RuledLineHeight, 1f);
-                lineGo.layer = 5;
-                var lsr = lineGo.AddComponent<SpriteRenderer>();
-                lsr.sprite       = lineSprite;
-                lsr.color        = lineColor;
-                lsr.sortingOrder = 1001;
-            }
+                rt.sizeDelta = new Vector2(TextWidth, rt.sizeDelta.y);
         }
 
-        // ── Clear button ──────────────────────────────────────────────────────
+        // ── Click-to-focus (bundle's Textbox already carries a PassiveButton) ───
+        var textboxButton = textboxT != null ? textboxT.GetComponent<PassiveButton>() : null;
+        if (textboxButton != null)
+        {
+            textboxButton.OnClick = new Button.ButtonClickedEvent();
+            textboxButton.OnClick.AddListener((UnityAction)(() =>
+            {
+                _focused = true;
+                PlaceCursorAtMouse();
+            }));
+        }
+
+        // ── Close button (bundle's CloseButton already carries a PassiveButton) ─
+        var closeButton = _panelInstance.transform.Find("CloseButton")?.GetComponent<PassiveButton>();
+        if (closeButton != null)
+        {
+            closeButton.OnClick = new Button.ButtonClickedEvent();
+            closeButton.OnClick.AddListener((UnityAction)Close);
+        }
+
+        // ── Clear button ─────────────────────────────────────────────────────────
+        // Not part of the bundle (LaunchpadReloaded's notepad has no clear
+        // button) — kept as its own runtime-built object, same as before porting.
         var clearSprite      = LoadSprite("NotePadMod.Resources.notepad_clear.png");
         var clearHoverSprite = LoadSprite("NotePadMod.Resources.notepad_clear_hover.png");
         if (clearSprite != null)

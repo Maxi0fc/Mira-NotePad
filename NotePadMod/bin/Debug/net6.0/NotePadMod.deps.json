@@ -1,0 +1,86 @@
+{
+  "runtimeTarget": {
+    "name": ".NETCoreApp,Version=v6.0",
+    "signature": ""
+  },
+  "compilationOptions": {},
+  "targets": {
+    ".NETCoreApp,Version=v6.0": {
+      "NotePadMod/1.0.0": {
+        "dependencies": {
+          "TownOfUsMira": "1.7.1-dev",
+          "MiraAPI": "0.4.3.0"
+        },
+        "runtime": {
+          "NotePadMod.dll": {}
+        }
+      },
+      "AllOfUs.MiraAPI/0.4.3-dev": {
+        "dependencies": {
+          "Reactor": "2.5.1-dev"
+        },
+        "runtime": {
+          "MiraAPI.dll": {
+            "assemblyVersion": "0.4.3.0",
+            "fileVersion": "0.4.3.0"
+          }
+        }
+      },
+      "Reactor/2.5.1-dev": {
+        "runtime": {
+          "Reactor.dll": {
+            "assemblyVersion": "2.5.1.0",
+            "fileVersion": "2.5.1.0"
+          }
+        }
+      },
+      "TownOfUsMira/1.7.1-dev": {
+        "dependencies": {
+          "AllOfUs.MiraAPI": "0.4.3-dev",
+          "Reactor": "2.5.1-dev"
+        },
+        "runtime": {
+          "TownOfUsMira.dll": {
+            "assemblyVersion": "1.7.1.0",
+            "fileVersion": "1.7.1.0"
+          }
+        }
+      },
+      "MiraAPI/0.4.3.0": {
+        "runtime": {
+          "MiraAPI.dll": {
+            "assemblyVersion": "0.4.3.0",
+            "fileVersion": "0.4.3.0"
+          }
+        }
+      }
+    }
+  },
+  "libraries": {
+    "NotePadMod/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "AllOfUs.MiraAPI/0.4.3-dev": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "Reactor/2.5.1-dev": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "TownOfUsMira/1.7.1-dev": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "MiraAPI/0.4.3.0": {
+      "type": "reference",
+      "serviceable": false,
+      "sha512": ""
+    }
+  }
+}

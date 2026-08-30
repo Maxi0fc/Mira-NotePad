@@ -1,10 +1,11 @@
 using HarmonyLib;
+using MiraAPI.Hud;
+using NotePadMod.Assets;
 using NotePadMod.UI;
 using TownOfUs.Patches;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.UI;
-using System.Reflection;
 
 namespace NotePadMod.Patches;
 
@@ -15,18 +16,6 @@ public static class HudManagerPatch
     private static NotepadButtonRow _currentRow = (NotepadButtonRow)(-1);
     private static Sprite? _inactiveSprite;
     private static Sprite? _activeSprite;
-
-    private static Sprite? LoadEmbeddedSprite(string resourceName)
-    {
-        var assembly = Assembly.GetExecutingAssembly();
-        using var stream = assembly.GetManifestResourceStream(resourceName);
-        if (stream == null) return null;
-        var bytes = new byte[stream.Length];
-        stream.Read(bytes, 0, bytes.Length);
-        var tex = new Texture2D(2, 2, TextureFormat.RGBA32, false);
-        ImageConversion.LoadImage(tex, bytes);
-        return Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(0.5f, 0.5f), 115f);
-    }
 
     public static void InvalidateButton()
     {
@@ -41,15 +30,15 @@ public static class HudManagerPatch
         if (!NotePadButtonObj) return true;
 
         var expectedParent = _currentRow == NotepadButtonRow.TopRow
-            ? HudManagerPatches.UiTopRight?.transform
-            : HudManagerPatches.ExtraUiTopRight?.transform;
+            ? MiraHudHelper.UiTopRight?.transform
+            : MiraHudHelper.ExtraUiTopRight?.transform;
 
         return expectedParent == null || NotePadButtonObj!.transform.parent != expectedParent;
     }
 
     public static void CreateOrUpdateNotePadButton(HudManager instance)
     {
-        if (HudManagerPatches.UiTopRight == null || HudManagerPatches.ExtraUiTopRight == null)
+        if (MiraHudHelper.UiTopRight == null || MiraHudHelper.ExtraUiTopRight == null)
             return;
 
         if (IsButtonStale())
@@ -64,7 +53,7 @@ public static class HudManagerPatch
 
             NotePadButtonObj = Object.Instantiate(
                 instance.MapButton.gameObject,
-                HudManagerPatches.ExtraUiTopRight.transform
+                MiraHudHelper.ExtraUiTopRight.transform
             );
             NotePadButtonObj.name = "NotePadButton";
 
@@ -76,9 +65,9 @@ public static class HudManagerPatch
             if (ap != null) Object.Destroy(ap);
 
             if (_inactiveSprite == null)
-                _inactiveSprite = LoadEmbeddedSprite("NotePadMod.Resources.notepad_inactive.png");
+                _inactiveSprite = NotepadAssets.NotepadButtonSprite.LoadAsset();
             if (_activeSprite == null)
-                _activeSprite = LoadEmbeddedSprite("NotePadMod.Resources.notepad_active.png");
+                _activeSprite = NotepadAssets.NotepadButtonActiveSprite.LoadAsset();
 
             var inactive = NotePadButtonObj.transform.Find("Inactive");
             var active   = NotePadButtonObj.transform.Find("Active");
@@ -101,8 +90,8 @@ public static class HudManagerPatch
         if (_currentRow != desiredRow)
         {
             Transform targetParent = desiredRow == NotepadButtonRow.TopRow
-                ? HudManagerPatches.UiTopRight.transform
-                : HudManagerPatches.ExtraUiTopRight.transform;
+                ? MiraHudHelper.UiTopRight.transform
+                : MiraHudHelper.ExtraUiTopRight.transform;
 
             NotePadButtonObj!.transform.SetParent(targetParent, false);
             NotePadButtonObj.transform.localPosition = new Vector3(0f, 0.021f, -80f);
@@ -114,8 +103,8 @@ public static class HudManagerPatch
 
             _currentRow = desiredRow;
 
-            HudManagerPatches.UiGrid?.ArrangeChilds();
-            HudManagerPatches.ExtraUiGrid?.ArrangeChilds();
+            MiraHudHelper.UiGrid?.ArrangeChilds();
+            MiraHudHelper.ExtraUiGrid?.ArrangeChilds();
         }
 
         // Hide during meeting/exile animations by matching the MapButton's visibility.

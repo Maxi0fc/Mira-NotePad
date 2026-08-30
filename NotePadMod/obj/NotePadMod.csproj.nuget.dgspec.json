@@ -1,0 +1,446 @@
+{
+  "format": 1,
+  "restore": {
+    "/Users/neiljain/Documents/GitHub/Mira-NotePad/NotePadMod/NotePadMod.csproj": {}
+  },
+  "projects": {
+    "/Users/neiljain/Documents/GitHub/Mira-NotePad/NotePadMod/NotePadMod.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "/Users/neiljain/Documents/GitHub/Mira-NotePad/NotePadMod/NotePadMod.csproj",
+        "projectName": "NotePadMod",
+        "projectPath": "/Users/neiljain/Documents/GitHub/Mira-NotePad/NotePadMod/NotePadMod.csproj",
+        "packagesPath": "/Users/neiljain/.nuget/packages/",
+        "outputPath": "/Users/neiljain/Documents/GitHub/Mira-NotePad/NotePadMod/obj/",
+        "projectStyle": "PackageReference",
+        "configFilePaths": [
+          "/Users/neiljain/.nuget/NuGet/NuGet.Config"
+        ],
+        "originalTargetFrameworks": [
+          "net6.0"
+        ],
+        "sources": {
+          "https://api.nuget.org/v3/index.json": {},
+          "https://nuget.reactor.gg/v3/index.json": {}
+        },
+        "frameworks": {
+          "net6.0": {
+            "targetAlias": "net6.0",
+            "projectReferences": {
+              "/Users/neiljain/Documents/GitHub/TOU-Mira/TownOfUs/TownOfUsMira.csproj": {
+                "projectPath": "/Users/neiljain/Documents/GitHub/TOU-Mira/TownOfUs/TownOfUsMira.csproj"
+              }
+            }
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        },
+        "SdkAnalysisLevel": "10.0.100"
+      },
+      "frameworks": {
+        "net6.0": {
+          "targetAlias": "net6.0",
+          "dependencies": {
+            "AmongUs.GameLibs.Android": {
+              "target": "Package",
+              "version": "[2026.3.17, )"
+            },
+            "BepInEx.AutoPlugin": {
+              "suppressParent": "All",
+              "target": "Package",
+              "version": "[1.1.0, )"
+            },
+            "BepInEx.IL2CPP.MSBuild": {
+              "include": "Compile, Build, Native, ContentFiles, Analyzers, BuildTransitive",
+              "suppressParent": "All",
+              "target": "Package",
+              "version": "[2.0.1, )"
+            },
+            "BepInEx.Unity.IL2CPP": {
+              "include": "Compile, Build, ContentFiles, Analyzers, BuildTransitive",
+              "target": "Package",
+              "version": "[6.0.0-be.735, )"
+            }
+          },
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "downloadDependencies": [
+            {
+              "name": "Microsoft.AspNetCore.App.Ref",
+              "version": "[6.0.36, 6.0.36]"
+            },
+            {
+              "name": "Microsoft.NETCore.App.Ref",
+              "version": "[6.0.36, 6.0.36]"
+            }
+          ],
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "/usr/local/share/dotnet/sdk/10.0.101/RuntimeIdentifierGraph.json"
+        }
+      }
+    },
+    "/Users/neiljain/Documents/GitHub/TOU-Mira/GitSubmodules/MiraAPI/MiraAPI/MiraAPI.csproj": {
+      "version": "0.4.3-dev",
+      "restore": {
+        "projectUniqueName": "/Users/neiljain/Documents/GitHub/TOU-Mira/GitSubmodules/MiraAPI/MiraAPI/MiraAPI.csproj",
+        "projectName": "AllOfUs.MiraAPI",
+        "projectPath": "/Users/neiljain/Documents/GitHub/TOU-Mira/GitSubmodules/MiraAPI/MiraAPI/MiraAPI.csproj",
+        "packagesPath": "/Users/neiljain/.nuget/packages/",
+        "outputPath": "/Users/neiljain/Documents/GitHub/TOU-Mira/GitSubmodules/MiraAPI/MiraAPI/obj/",
+        "projectStyle": "PackageReference",
+        "configFilePaths": [
+          "/Users/neiljain/Documents/GitHub/TOU-Mira/GitSubmodules/MiraAPI/NuGet.Config",
+          "/Users/neiljain/Documents/GitHub/TOU-Mira/NuGet.Config",
+          "/Users/neiljain/.nuget/NuGet/NuGet.Config"
+        ],
+        "originalTargetFrameworks": [
+          "net6.0"
+        ],
+        "sources": {
+          "/Users/neiljain/Documents/GitHub/TOU-Mira/GitSubmodules/MiraAPI/packages": {},
+          "/Users/neiljain/Documents/GitHub/TOU-Mira/packages.local/": {},
+          "https://api.nuget.org/v3/index.json": {},
+          "https://nuget.bepinex.dev/v3/index.json": {},
+          "https://nuget.reactor.gg/v3/index.json": {},
+          "https://nuget.samboy.dev/v3/index.json": {}
+        },
+        "frameworks": {
+          "net6.0": {
+            "targetAlias": "net6.0",
+            "projectReferences": {}
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreLockProperties": {
+          "restorePackagesWithLockFile": "true"
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        },
+        "SdkAnalysisLevel": "10.0.100"
+      },
+      "frameworks": {
+        "net6.0": {
+          "targetAlias": "net6.0",
+          "dependencies": {
+            "AmongUs.GameLibs.Steam": {
+              "suppressParent": "All",
+              "target": "Package",
+              "version": "[2026.8.18, )"
+            },
+            "BepInEx.AutoPlugin": {
+              "suppressParent": "All",
+              "target": "Package",
+              "version": "[1.1.0, )"
+            },
+            "BepInEx.IL2CPP.MSBuild": {
+              "include": "Compile, Build, Native, ContentFiles, Analyzers, BuildTransitive",
+              "suppressParent": "All",
+              "target": "Package",
+              "version": "[2.1.0-rc.1, )"
+            },
+            "BepInEx.Unity.IL2CPP": {
+              "include": "Compile, Build, ContentFiles, Analyzers, BuildTransitive",
+              "target": "Package",
+              "version": "[6.0.0-be.735, )"
+            },
+            "Reactor": {
+              "target": "Package",
+              "version": "[2.5.0-ci.371, )"
+            },
+            "SonarAnalyzer.CSharp": {
+              "include": "Runtime, Build, Native, ContentFiles, Analyzers",
+              "suppressParent": "All",
+              "target": "Package",
+              "version": "[10.7.0.110445, )"
+            },
+            "StyleCop.Analyzers": {
+              "suppressParent": "All",
+              "target": "Package",
+              "version": "[1.2.0-beta.556, )"
+            }
+          },
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "downloadDependencies": [
+            {
+              "name": "Microsoft.AspNetCore.App.Ref",
+              "version": "[6.0.36, 6.0.36]"
+            },
+            {
+              "name": "Microsoft.NETCore.App.Ref",
+              "version": "[6.0.36, 6.0.36]"
+            }
+          ],
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "/usr/local/share/dotnet/sdk/10.0.101/RuntimeIdentifierGraph.json"
+        }
+      }
+    },
+    "/Users/neiljain/Documents/GitHub/TOU-Mira/GitSubmodules/Reactor/Reactor/Reactor.csproj": {
+      "version": "2.5.1-dev",
+      "restore": {
+        "projectUniqueName": "/Users/neiljain/Documents/GitHub/TOU-Mira/GitSubmodules/Reactor/Reactor/Reactor.csproj",
+        "projectName": "Reactor",
+        "projectPath": "/Users/neiljain/Documents/GitHub/TOU-Mira/GitSubmodules/Reactor/Reactor/Reactor.csproj",
+        "packagesPath": "/Users/neiljain/.nuget/packages/",
+        "outputPath": "/Users/neiljain/Documents/GitHub/TOU-Mira/GitSubmodules/Reactor/Reactor/obj/",
+        "projectStyle": "PackageReference",
+        "configFilePaths": [
+          "/Users/neiljain/Documents/GitHub/TOU-Mira/GitSubmodules/Reactor/NuGet.Config",
+          "/Users/neiljain/Documents/GitHub/TOU-Mira/NuGet.Config",
+          "/Users/neiljain/.nuget/NuGet/NuGet.Config"
+        ],
+        "originalTargetFrameworks": [
+          "net6.0"
+        ],
+        "sources": {
+          "/Users/neiljain/Documents/GitHub/TOU-Mira/packages.local/": {},
+          "https://api.nuget.org/v3/index.json": {},
+          "https://nuget.bepinex.dev/v3/index.json": {},
+          "https://nuget.reactor.gg/v3/index.json": {},
+          "https://nuget.samboy.dev/v3/index.json": {},
+          "https://nuget.samboy.dev/v3/index.json": {}
+        },
+        "frameworks": {
+          "net6.0": {
+            "targetAlias": "net6.0",
+            "projectReferences": {}
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreLockProperties": {
+          "restorePackagesWithLockFile": "true"
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        },
+        "SdkAnalysisLevel": "10.0.100"
+      },
+      "frameworks": {
+        "net6.0": {
+          "targetAlias": "net6.0",
+          "dependencies": {
+            "AmongUs.GameLibs.Steam": {
+              "suppressParent": "All",
+              "target": "Package",
+              "version": "[2025.4.15, )"
+            },
+            "BepInEx.AutoPlugin": {
+              "suppressParent": "All",
+              "target": "Package",
+              "version": "[1.1.0, )"
+            },
+            "BepInEx.IL2CPP.MSBuild": {
+              "include": "Compile, Build, Native, ContentFiles, Analyzers, BuildTransitive",
+              "suppressParent": "All",
+              "target": "Package",
+              "version": "[2.1.0-rc.1, )"
+            },
+            "BepInEx.Unity.IL2CPP": {
+              "include": "Compile, Build, ContentFiles, Analyzers, BuildTransitive",
+              "target": "Package",
+              "version": "[6.0.0-be.735, )"
+            },
+            "StyleCop.Analyzers": {
+              "suppressParent": "All",
+              "target": "Package",
+              "version": "[1.2.0-beta.556, )"
+            }
+          },
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "downloadDependencies": [
+            {
+              "name": "Microsoft.AspNetCore.App.Ref",
+              "version": "[6.0.36, 6.0.36]"
+            },
+            {
+              "name": "Microsoft.NETCore.App.Ref",
+              "version": "[6.0.36, 6.0.36]"
+            }
+          ],
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "/usr/local/share/dotnet/sdk/10.0.101/RuntimeIdentifierGraph.json"
+        }
+      }
+    },
+    "/Users/neiljain/Documents/GitHub/TOU-Mira/TownOfUs/TownOfUsMira.csproj": {
+      "version": "1.7.1-dev",
+      "restore": {
+        "projectUniqueName": "/Users/neiljain/Documents/GitHub/TOU-Mira/TownOfUs/TownOfUsMira.csproj",
+        "projectName": "TownOfUsMira",
+        "projectPath": "/Users/neiljain/Documents/GitHub/TOU-Mira/TownOfUs/TownOfUsMira.csproj",
+        "packagesPath": "/Users/neiljain/.nuget/packages/",
+        "outputPath": "/Users/neiljain/Documents/GitHub/TOU-Mira/TownOfUs/obj/",
+        "projectStyle": "PackageReference",
+        "configFilePaths": [
+          "/Users/neiljain/Documents/GitHub/TOU-Mira/NuGet.Config",
+          "/Users/neiljain/.nuget/NuGet/NuGet.Config"
+        ],
+        "originalTargetFrameworks": [
+          "net6.0"
+        ],
+        "sources": {
+          "/Users/neiljain/Documents/GitHub/TOU-Mira/packages.local/": {},
+          "https://api.nuget.org/v3/index.json": {},
+          "https://nuget.bepinex.dev/v3/index.json": {},
+          "https://nuget.reactor.gg/v3/index.json": {},
+          "https://nuget.samboy.dev/v3/index.json": {}
+        },
+        "frameworks": {
+          "net6.0": {
+            "targetAlias": "net6.0",
+            "projectReferences": {
+              "/Users/neiljain/Documents/GitHub/TOU-Mira/GitSubmodules/MiraAPI/MiraAPI/MiraAPI.csproj": {
+                "projectPath": "/Users/neiljain/Documents/GitHub/TOU-Mira/GitSubmodules/MiraAPI/MiraAPI/MiraAPI.csproj"
+              },
+              "/Users/neiljain/Documents/GitHub/TOU-Mira/GitSubmodules/Reactor/Reactor/Reactor.csproj": {
+                "projectPath": "/Users/neiljain/Documents/GitHub/TOU-Mira/GitSubmodules/Reactor/Reactor/Reactor.csproj"
+              }
+            }
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreLockProperties": {
+          "restorePackagesWithLockFile": "true"
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        },
+        "SdkAnalysisLevel": "10.0.100"
+      },
+      "frameworks": {
+        "net6.0": {
+          "targetAlias": "net6.0",
+          "dependencies": {
+            "AmongUs.GameLibs.Steam": {
+              "suppressParent": "All",
+              "target": "Package",
+              "version": "[2026.8.18, )"
+            },
+            "BepInEx.AutoPlugin": {
+              "suppressParent": "All",
+              "target": "Package",
+              "version": "[1.1.0, )"
+            },
+            "BepInEx.IL2CPP.MSBuild": {
+              "include": "Compile, Build, Native, ContentFiles, Analyzers, BuildTransitive",
+              "suppressParent": "All",
+              "target": "Package",
+              "version": "[2.1.0-rc.1, )"
+            },
+            "BepInEx.Unity.IL2CPP": {
+              "include": "Compile, Build, ContentFiles, Analyzers, BuildTransitive",
+              "target": "Package",
+              "version": "[6.0.0-be.735, )"
+            },
+            "PerfectComms.Api": {
+              "suppressParent": "All",
+              "target": "Package",
+              "version": "[4.1.7.1, )"
+            },
+            "SonarAnalyzer.CSharp": {
+              "include": "Runtime, Build, Native, ContentFiles, Analyzers",
+              "suppressParent": "All",
+              "target": "Package",
+              "version": "[10.12.0.118525, )"
+            }
+          },
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "downloadDependencies": [
+            {
+              "name": "Microsoft.AspNetCore.App.Ref",
+              "version": "[6.0.36, 6.0.36]"
+            },
+            {
+              "name": "Microsoft.NETCore.App.Ref",
+              "version": "[6.0.36, 6.0.36]"
+            }
+          ],
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "/usr/local/share/dotnet/sdk/10.0.101/RuntimeIdentifierGraph.json"
+        }
+      }
+    }
+  }
+}

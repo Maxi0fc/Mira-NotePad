@@ -15,9 +15,7 @@
 
   <!-- Lokala referenser -->
   <ItemGroup>
-    <PackageReference Include="TownOfUsMira" Version="1.6.3-ci.1175" />
-        <PackageReference Include="AllOfUs.MiraAPI" Version="0.4.1-ci.1022" />
-        <PackageReference Include="Reactor" Version="2.5.0-ci.371" />
+        <ProjectReference Include="../../TOU-Mira/TownOfUs/TownOfUsMira.csproj" />
         <PackageReference Include="BepInEx.Unity.IL2CPP" Version="6.0.0-be.735" Private="false" ExcludeAssets="runtime;native" />
         <PackageReference Include="AmongUs.GameLibs.Android" Version="2026.3.17" />
         <PackageReference Include="BepInEx.AutoPlugin" Version="1.1.0" PrivateAssets="all" />
@@ -32,6 +30,8 @@
     <EmbeddedResource Include="Resources\notepad_clear.png" />
     <EmbeddedResource Include="Resources\notepad_clear_hover.png" />
     <EmbeddedResource Include="Resources\notepad_logo.png" />
+        <EmbeddedResource Include="Resources\notepad.bundle" />
+
     <EmbeddedResource Include="modinfo.json" />
   </ItemGroup>
 
@@ -39,7 +39,7 @@
     <MakeDir Directories="$(AmongUsDir)\BepInEx\plugins\" />
     <Copy
       SourceFiles="$(OutputPath)$(AssemblyName).dll"
-      DestinationFolder="$(AmongUsDir)\BepInEx\plugins\"
+      DestinationFolder="/Users/neiljain/Library/Application Support/CrossOver/Bottles/Mainly/drive_c/Program Files (x86)/Steam/steamapps/common/Among Us copy/BepInEx/plugins"
       SkipUnchangedFiles="false" />
     <Message Text="DLL kopierad till plugins!" Importance="high" />
   </Target>
