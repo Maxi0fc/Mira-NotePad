@@ -53,14 +53,7 @@ public sealed class NotePadLocalSettings(ConfigFile config) : LocalSettingsTab(c
         config.Bind(
             "Appearance",
             "Text Color",
-            NotepadTextColor.White);
-
-    [LocalEnumSetting]
-    public ConfigEntry<NotepadWindowSkin> WindowSkin { get; private set; } =
-        config.Bind(
-            "Appearance",
-            "Window Skin",
-            NotepadWindowSkin.Grey);
+            NotepadTextColor.Black);
 
     [LocalToggleSetting]
     public ConfigEntry<bool> AutoAddRoleInfo { get; private set; } =

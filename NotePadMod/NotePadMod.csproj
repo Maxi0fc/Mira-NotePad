@@ -5,6 +5,7 @@
     <Nullable>enable</Nullable>
     <LangVersion>latest</LangVersion>
     <Platforms>AnyCPU</Platforms>
+    <Version>1.4.0</Version>
     <NoWarn>$(NoWarn);CS0436;CS0618</NoWarn>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
@@ -30,8 +31,7 @@
     <EmbeddedResource Include="Resources\notepad_clear.png" />
     <EmbeddedResource Include="Resources\notepad_clear_hover.png" />
     <EmbeddedResource Include="Resources\notepad_logo.png" />
-        <EmbeddedResource Include="Resources\notepad.bundle" />
-
+    <EmbeddedResource Include="Resources\notepad-mod-win.bundle" />
     <EmbeddedResource Include="modinfo.json" />
   </ItemGroup>
 

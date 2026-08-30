@@ -46,7 +46,6 @@ public static class HudManagerPatch
 
         var desiredRow = NotePadPlugin.Settings.ButtonRow.Value;
 
-        // ── Create ────────────────────────────────────────────────────────────
         if (!NotePadButtonObj)
         {
             _currentRow = (NotepadButtonRow)(-1);
@@ -86,7 +85,6 @@ public static class HudManagerPatch
             }
         }
 
-        // ── Row placement ─────────────────────────────────────────────────────
         if (_currentRow != desiredRow)
         {
             Transform targetParent = desiredRow == NotepadButtonRow.TopRow
@@ -107,9 +105,6 @@ public static class HudManagerPatch
             MiraHudHelper.ExtraUiGrid?.ArrangeChilds();
         }
 
-        // Hide during meeting/exile animations by matching the MapButton's visibility.
-        // The game hides the top-right buttons during meeting intro and exile sequences;
-        // we mirror that so the notepad doesn't stay visible when everything else is hidden.
         bool show = true;
         if (ExileController.Instance)
         {
@@ -121,9 +116,6 @@ public static class HudManagerPatch
         }
         NotePadButtonObj!.SetActive(show);
     }
-
-    // ── Harmony patches ───────────────────────────────────────────────────────
-
     [HarmonyPatch(typeof(HudManager), nameof(HudManager.Update))]
     [HarmonyPostfix]
     public static void HudManagerUpdatePatch(HudManager __instance)

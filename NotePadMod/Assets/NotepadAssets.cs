@@ -1,37 +1,28 @@
-using System.Reflection;
+using BepInEx.Logging;
 using MiraAPI.Utilities.Assets;
 using Reactor.Utilities;
 using UnityEngine;
 
 namespace NotePadMod.Assets;
 
-/// <summary>
-/// Loads the notepad's Unity prefab and HUD-button sprites from the embedded
-/// AssetBundle at Resources/notepad.bundle.
-///
-/// That bundle is a trimmed copy of LaunchpadReloaded's
-/// "launchpad-assets-win.bundle" — stripped down (via UnityPy) to just the
-/// "Notepad" prefab and the two "NotepadButton"/"NotepadButtonActive"
-/// sprites, so this mod ships only what it actually uses.
-/// </summary>
 public static class NotepadAssets
 {
-    private static AssetBundle? _bundle;
+    private static readonly ManualLogSource DebugLog = BepInEx.Logging.Logger.CreateLogSource("NotepadAssets");
+    private static readonly bool LoggedResources = LogResources();
 
-    /// <summary>
-    /// The loaded AssetBundle, lazily loaded on first access.
-    /// Reactor's AssetBundleManager looks for an embedded resource whose name
-    /// ends with "notepad.bundle" (see Resources/notepad.bundle in this
-    /// project, added as an EmbeddedResource in the .csproj).
-    /// </summary>
-    private static AssetBundle Bundle => AssetBundleManager.Load("notepad");
+    private static bool LogResources()
+    {
+        DebugLog.LogInfo($"NotepadAssets assembly: {typeof(NotepadAssets).Assembly.FullName}");
+        DebugLog.LogInfo($"NotepadAssets assembly location: {typeof(NotepadAssets).Assembly.Location}");
+        foreach (var n in typeof(NotepadAssets).Assembly.GetManifestResourceNames())
+        {
+            DebugLog.LogInfo($"NotepadAssets resource: {n}");
+        }
+        return true;
+    }
 
-    /// <summary>The root "Notepad" GameObject (Background, CloseButton, Title, Textbox, Lines).</summary>
-    public static LoadableAsset<GameObject> Notepad { get; } = new LoadableBundleAsset<GameObject>("Notepad", Bundle);
-
-    /// <summary>The HUD toolbar button's inactive-state sprite.</summary>
-    public static LoadableAsset<Sprite> NotepadButtonSprite { get; } = new LoadableBundleAsset<Sprite>("NotepadButton", Bundle);
-
-    /// <summary>The HUD toolbar button's active/pressed-state sprite.</summary>
-    public static LoadableAsset<Sprite> NotepadButtonActiveSprite { get; } = new LoadableBundleAsset<Sprite>("NotepadButtonActive", Bundle);
+    public static readonly AssetBundle Bundle = AssetBundleManager.Load("notepad-mod");
+    public static readonly LoadableAsset<GameObject> Notepad = new LoadableBundleAsset<GameObject>("Notepad", Bundle);
+    public static readonly LoadableAsset<Sprite> NotepadButtonSprite = new LoadableBundleAsset<Sprite>("NotepadButton", Bundle);
+    public static readonly LoadableAsset<Sprite> NotepadButtonActiveSprite = new LoadableBundleAsset<Sprite>("NotepadButtonActive", Bundle);
 }
