@@ -1,4 +1,5 @@
 using HarmonyLib;
+using NotePadMod.MeetingAbilities;
 using NotePadMod.UI;
 namespace NotePadMod.Patches;
 [HarmonyPatch]
@@ -10,6 +11,7 @@ public static class GameFlowPatch
     {
         NotePadWindow.ClearText();
         NotePadWindow.CloseWindow();
+        JotedRoleLabels.Clear();
     }
     [HarmonyPatch(typeof(ShipStatus), nameof(ShipStatus.Start))]
     [HarmonyPostfix]

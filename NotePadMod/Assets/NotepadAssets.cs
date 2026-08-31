@@ -25,4 +25,6 @@ public static class NotepadAssets
     public static readonly LoadableAsset<GameObject> Notepad = new LoadableBundleAsset<GameObject>("Notepad", Bundle);
     public static readonly LoadableAsset<Sprite> NotepadButtonSprite = new LoadableBundleAsset<Sprite>("NotepadButton", Bundle);
     public static readonly LoadableAsset<Sprite> NotepadButtonActiveSprite = new LoadableBundleAsset<Sprite>("NotepadButtonActive", Bundle);
+    public static readonly LoadableAsset<Sprite> JotButtonSprite = new LoadableResourceAsset("NotePadMod.Resources.JotButton.png");
+
 }

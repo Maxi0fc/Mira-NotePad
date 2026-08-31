@@ -4,88 +4,162 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
+using BepInEx.Logging;
 using MiraAPI.Modifiers;
-using MiraAPI.Modifiers.Types;
-using TownOfUs.Modifiers;
-using TownOfUs.Modifiers.Game;
-using TownOfUs.Utilities;
+using NotePadMod.Compatibility;
 using UnityEngine;
+
 namespace NotePadMod.UI;
 
 public static class ModifierColorizer
 {
-    private static readonly BepInEx.Logging.ManualLogSource Log = BepInEx.Logging.Logger.CreateLogSource("ModifierColorizer");
+    private static readonly ManualLogSource Log = BepInEx.Logging.Logger.CreateLogSource("ModifierColorizer");
     private static Dictionary<string, string>? _modifierColors;
     private static Dictionary<string, string>? _modifierIcons;
     private static Regex? _modifierRegex;
+
     public static void Refresh()
     {
         _modifierColors = new Dictionary<string, string>();
         _modifierIcons = new Dictionary<string, string>();
         int count = 0;
-        foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+
+        try
         {
-            Type[] types;
-            try
+            // 1. Load all registered modifiers from MiraAPI ModifierManager
+            if (ModifierManager.Modifiers != null)
             {
-                types = assembly.GetTypes();
-            }
-            catch (ReflectionTypeLoadException e)
-            {
-                types = e.Types.Where(t => t != null).ToArray()!;
-            }
-            catch
-            {
-                continue;
+                foreach (var mod in ModifierManager.Modifiers)
+                {
+                    if (mod == null) continue;
+
+                    string name = GetModifierName(mod);
+                    if (string.IsNullOrEmpty(name)) continue;
+
+                    string key = name.ToLowerInvariant();
+                    Color? col = TouIntegration.IsTouPresent ? TouIntegration.GetModifierColour(mod) : null;
+                    string hex = ColorUtility.ToHtmlStringRGB(col ?? Color.magenta);
+
+                    _modifierColors[key] = hex;
+
+                    string? icon = TryGetModifierIcon(mod);
+                    if (!string.IsNullOrEmpty(icon))
+                    {
+                        _modifierIcons[key] = icon;
+                    }
+
+                    count++;
+                }
             }
 
-            foreach (var type in types)
-            {
-                if (type.IsAbstract || type.IsInterface) continue;
-                if (!typeof(TouBaseGameModifier).IsAssignableFrom(type)) continue;
-                if (type.GetConstructor(Type.EmptyTypes) == null) continue;
+            // 2. Scan assemblies for any additional BaseModifier or TouBaseGameModifier implementations
+            Type? touBaseModType = TouIntegration.IsTouPresent ? TouIntegration.GetTouBaseGameModifierType() : null;
 
-                TouBaseGameModifier? instance;
+            foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+            {
+                Type[] types;
                 try
                 {
-                    instance = Activator.CreateInstance(type) as TouBaseGameModifier;
+                    types = assembly.GetTypes();
                 }
-                catch (Exception ex)
+                catch (ReflectionTypeLoadException e)
                 {
-                    Log.LogWarning($"[ModifierColorizer] Failed to instantiate {type.Name}: {ex.Message}");
+                    types = e.Types.Where(t => t != null).ToArray()!;
+                }
+                catch
+                {
                     continue;
                 }
 
-                if (instance == null) continue;
-
-                string name = instance.ModifierName?.Trim() ?? "";
-                if (name.Length == 0) continue;
-
-                ModifierUiConfiguration config;
-                try
+                foreach (var type in types)
                 {
-                    config = instance.Configuration;
-                }
-                catch (Exception ex)
-                {
-                    Log.LogWarning($"[ModifierColorizer] {type.Name}.Configuration threw: {ex.Message}");
-                    continue;
-                }
+                    if (type.IsAbstract || type.IsInterface) continue;
 
-                string key = name.ToLowerInvariant();
-                _modifierColors[key] = ColorUtility.ToHtmlStringRGB(MiscUtils.GetModifierColour(instance));
+                    bool isBaseMod = typeof(BaseModifier).IsAssignableFrom(type);
+                    bool isTouMod = touBaseModType != null && touBaseModType.IsAssignableFrom(type);
 
-                if (config.PopUpIconTmp != null)
-                {
-                    _modifierIcons[key] = $"<sprite name=\"{config.PopUpIconTmp.name}\">";
+                    if (!isBaseMod && !isTouMod) continue;
+                    if (type.GetConstructor(Type.EmptyTypes) == null) continue;
+
+                    object? instance;
+                    try
+                    {
+                        instance = Activator.CreateInstance(type);
+                    }
+                    catch
+                    {
+                        continue;
+                    }
+
+                    if (instance == null) continue;
+
+                    string name = GetModifierName(instance);
+                    if (string.IsNullOrEmpty(name)) continue;
+
+                    string key = name.ToLowerInvariant();
+                    if (_modifierColors.ContainsKey(key)) continue;
+
+                    Color? col = TouIntegration.IsTouPresent ? TouIntegration.GetModifierColour(instance) : null;
+                    string hex = ColorUtility.ToHtmlStringRGB(col ?? Color.magenta);
+
+                    _modifierColors[key] = hex;
+
+                    string? icon = TryGetModifierIcon(instance);
+                    if (!string.IsNullOrEmpty(icon))
+                    {
+                        _modifierIcons[key] = icon;
+                    }
+
+                    count++;
                 }
-
-                count++;
             }
+        }
+        catch (Exception ex)
+        {
+            Log.LogError($"[ModifierColorizer] Exception during Refresh: {ex}");
         }
 
         Log.LogInfo($"[ModifierColorizer] Loaded {count} modifiers");
         BuildRegex();
+    }
+
+    private static string GetModifierName(object instance)
+    {
+        var prop = instance.GetType().GetProperty("ModifierName", BindingFlags.Public | BindingFlags.Instance);
+        if (prop != null)
+        {
+            try
+            {
+                var val = prop.GetValue(instance) as string;
+                if (!string.IsNullOrWhiteSpace(val)) return val.Trim();
+            }
+            catch { }
+        }
+        return instance.GetType().Name;
+    }
+
+    private static string? TryGetModifierIcon(object instance)
+    {
+        try
+        {
+            var configProp = instance.GetType().GetProperty("Configuration", BindingFlags.Public | BindingFlags.Instance);
+            if (configProp == null) return null;
+
+            var configObj = configProp.GetValue(instance);
+            if (configObj == null) return null;
+
+            var popupProp = configObj.GetType().GetProperty("PopUpIconTmp", BindingFlags.Public | BindingFlags.Instance);
+            if (popupProp == null) return null;
+
+            var spriteAsset = popupProp.GetValue(configObj) as UnityEngine.Object;
+            if (spriteAsset != null && !string.IsNullOrEmpty(spriteAsset.name))
+            {
+                return $"<sprite name=\"{spriteAsset.name}\">";
+            }
+        }
+        catch { }
+
+        return null;
     }
 
     private static void BuildRegex()
@@ -96,8 +170,10 @@ public static class ModifierColorizer
             Log.LogWarning("[ModifierColorizer] No modifiers found, regex not built");
             return;
         }
+
         var names = new List<string>(_modifierColors.Keys);
         names.Sort((a, b) => b.Length.CompareTo(a.Length));
+
         var sb = new StringBuilder(@"(?i)\b(");
         for (int i = 0; i < names.Count; i++)
         {
@@ -105,6 +181,7 @@ public static class ModifierColorizer
             sb.Append(Regex.Escape(names[i]));
         }
         sb.Append(@")\b");
+
         _modifierRegex = new Regex(sb.ToString(), RegexOptions.IgnoreCase | RegexOptions.Compiled);
         Log.LogInfo($"[ModifierColorizer] Regex built with {names.Count} modifier names");
     }
@@ -118,6 +195,7 @@ public static class ModifierColorizer
 
         if (_modifierColors == null || _modifierRegex == null || raw.Length == 0)
             return raw;
+
         return _modifierRegex.Replace(raw, m =>
         {
             string key = m.Value.ToLowerInvariant();
