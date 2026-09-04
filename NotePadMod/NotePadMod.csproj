@@ -5,6 +5,7 @@
     <Nullable>enable</Nullable>
     <LangVersion>latest</LangVersion>
     <Platforms>AnyCPU</Platforms>
+    <Version>1.4.0</Version>
     <NoWarn>$(NoWarn);CS0436;CS0618</NoWarn>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
@@ -13,24 +14,21 @@
     <AmongUsDir>/Users/neiljain/Library/Application Support/CrossOver/Bottles/Among Us/drive_c/Program Files (x86)/Steam/steamapps/common/Among Us</AmongUsDir>
   </PropertyGroup>
 
+  <!-- Lokala referenser -->
   <ItemGroup>
-    <PackageReference Include="TownOfUsMira" Version="1.6.2" />
-        <PackageReference Include="AllOfUs.MiraAPI" Version="0.4.0" />
-        <PackageReference Include="Reactor" Version="2.5.0-ci.371" />
+        <PackageReference Include="TownOfUsMira" Version="1.7.2" />
+        <PackageReference Include="AllOfUs.MiraAPI" Version="0.5.0"/>
+        <PackageReference Include="Reactor" Version="2.5.1"/>
         <PackageReference Include="BepInEx.Unity.IL2CPP" Version="6.0.0-be.735" Private="false" ExcludeAssets="runtime;native" />
-        <PackageReference Include="AmongUs.GameLibs.Android" Version="2026.3.17" />
+        <PackageReference Include="AmongUs.GameLibs.Android" Version="2026.8.18" />
         <PackageReference Include="BepInEx.AutoPlugin" Version="1.1.0" PrivateAssets="all" />
         <PackageReference Include="BepInEx.IL2CPP.MSBuild" Version="2.0.1" PrivateAssets="all" ExcludeAssets="runtime" />
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="Resources\notepad_inactive.png" />
-    <EmbeddedResource Include="Resources\notepad_active.png" />
-    <EmbeddedResource Include="Resources\notepad_window.png" />
-    <EmbeddedResource Include="Resources\notepad_window_black.png" />
-    <EmbeddedResource Include="Resources\notepad_clear.png" />
-    <EmbeddedResource Include="Resources\notepad_clear_hover.png" />
+    <EmbeddedResource Include="Resources\JotButton.png" />
     <EmbeddedResource Include="Resources\notepad_logo.png" />
+    <EmbeddedResource Include="Resources\notepad-mod-win.bundle" />
     <EmbeddedResource Include="modinfo.json" />
   </ItemGroup>
 
@@ -38,7 +36,7 @@
     <MakeDir Directories="$(AmongUsDir)\BepInEx\plugins\" />
     <Copy
       SourceFiles="$(OutputPath)$(AssemblyName).dll"
-      DestinationFolder="$(AmongUsDir)\BepInEx\plugins\"
+      DestinationFolder="/Users/neiljain/Library/Application Support/CrossOver/Bottles/Mainly/drive_c/Program Files (x86)/Steam/steamapps/common/Among Us copy/BepInEx/plugins"
       SkipUnchangedFiles="false" />
     <Message Text="DLL kopierad till plugins!" Importance="high" />
   </Target>

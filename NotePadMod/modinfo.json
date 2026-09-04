@@ -1,6 +1,6 @@
 {
-  "Name": "ToU:M Notepad",
-  "Description": "Town of Us Mira notepad mod ",
+  "Name": "Mira Notepad",
+  "Description": "In-game notepad mod for MiraAPI with Town of Us Mira integration",
   "Tags": [
     "mods"
   ],
@@ -11,5 +11,5 @@
   ],
   "Links": {
     "Source": "https://github.com/neilmjain/TOUNotepad"
-    }
+  }
 }
