@@ -54,6 +54,23 @@ dotnet build NotePadMod/NotePadMod.csproj --configuration Release
 
 Targets .NET 6, built against BepInEx.Unity.IL2CPP and MiraAPI. CI builds and publishes the DLL on pushes to main/master and on tagged releases.
 
+### Starlight / Android
+
+The project can be compiled against the Android game assemblies used by Starlight:
+
+```
+dotnet restore NotePadMod/NotePadMod.csproj -p:GamePlatform=Android
+dotnet build NotePadMod/NotePadMod.csproj --configuration Release -p:GamePlatform=Android
+```
+
+Rebuild `Resources/notepad-mod-android.bundle` with Unity's Android target and place it beside the PC bundle before building an Android release. Reactor selects the matching embedded bundle from the base name `notepad-mod`; the Windows bundle must not be used on Android.
+
+The notepad opens Android's native touch keyboard automatically. PC deployment is opt-in and uses the configurable `AmongUsDir` property:
+
+```
+dotnet build NotePadMod/NotePadMod.csproj -p:DeployToAmongUs=true -p:AmongUsDir="/path/to/Among Us"
+```
+
 ## License
 
 GPLv3
