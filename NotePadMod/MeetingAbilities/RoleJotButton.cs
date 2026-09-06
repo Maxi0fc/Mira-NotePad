@@ -27,6 +27,32 @@ public sealed class RoleJotButton : TargetedMeetingButton
             .GetField("m_SubmitButton", BindingFlags.Instance | BindingFlags.NonPublic)
             ?.GetValue(MeetingHud.Instance) as Component;
         submitButton?.gameObject.SetActive(false);
+
+        HideVanillaVoteButtons();
+    }
+
+    private static void HideVanillaVoteButtons()
+    {
+        if (MeetingHud.Instance?.playerStates == null) return;
+
+        foreach (var playerVoteArea in MeetingHud.Instance.playerStates)
+        {
+            if (playerVoteArea == null) continue;
+
+            Component? voteButton = null;
+            var field = typeof(PlayerVoteArea).GetField(
+                "VoteButton",
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+            if (field?.GetValue(playerVoteArea) is Component fieldButton)
+                voteButton = fieldButton;
+
+            voteButton?.gameObject.SetActive(false);
+
+            // Some game versions expose the control only as a child object.
+            var childButton = playerVoteArea.transform.Find("VoteButton");
+            childButton?.gameObject.SetActive(false);
+        }
     }
 
     public void ForceJot(PlayerVoteArea playerVoteArea)
