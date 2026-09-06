@@ -21,6 +21,7 @@ public class NotePadWindow(nint ptr) : Minigame(ptr)
     private bool   _focused  = false;
     private float  _cursorBlink  = 0f;
     private bool   _cursorVisible = true;
+    private TouchScreenKeyboard? _touchKeyboard;
     private TextMeshPro? _displayTmp;
     private float _backspaceHeld = 0f;
     private float _deleteHeld    = 0f;
@@ -66,6 +67,27 @@ public class NotePadWindow(nint ptr) : Minigame(ptr)
             player.MyPhysics.body.velocity = Vector2.zero;
     }
 
+    private void OpenTouchKeyboard()
+    {
+        if (!Application.isMobilePlatform || !TouchScreenKeyboard.isSupported) return;
+
+        _touchKeyboard = TouchScreenKeyboard.Open(
+            _content,
+            TouchScreenKeyboardType.Default,
+            false,
+            true,
+            false,
+            false,
+            "Notepad");
+    }
+
+    private void CloseTouchKeyboard()
+    {
+        if (_touchKeyboard == null) return;
+        _touchKeyboard.active = false;
+        _touchKeyboard = null;
+    }
+
     public static void Toggle()
     {
         if (IsOpen) { CloseWindow(); return; }
@@ -94,6 +116,7 @@ public class NotePadWindow(nint ptr) : Minigame(ptr)
         _instance.gameObject.SetActive(true);
         _instance.transform.SetAsLastSibling();
         _instance._focused = true;
+        _instance.OpenTouchKeyboard();
 
         StopLocalPlayer();
         Input.ResetInputAxes();
@@ -116,7 +139,11 @@ public class NotePadWindow(nint ptr) : Minigame(ptr)
 
     public static void CloseWindow()
     {
-        if (_instance != null) _instance._focused = false;
+        if (_instance != null)
+        {
+            _instance._focused = false;
+            _instance.CloseTouchKeyboard();
+        }
         if (_instance != null) _instance.gameObject.SetActive(false);
 
         StopLocalPlayer();
@@ -195,6 +222,20 @@ public class NotePadWindow(nint ptr) : Minigame(ptr)
 
         if (!_focused) return;
         Input.ResetInputAxes();
+
+        if (_touchKeyboard != null)
+        {
+            string keyboardText = _touchKeyboard.text ?? string.Empty;
+            if (keyboardText != _content)
+            {
+                _content = keyboardText;
+                _cursorPos = _content.Length;
+                _cursorVisible = true;
+                _cursorBlink = 0f;
+                UpdateDisplay();
+            }
+        }
+
         if (_displayTmp != null)
             _displayTmp.color = GetTextColor();
         _cursorBlink += Time.deltaTime;
