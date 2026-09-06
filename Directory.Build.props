@@ -1,6 +1,6 @@
 <Project>
   <PropertyGroup>
     <!-- Set the package version used by the release script. Change as needed. -->
-    <Version>1.4.0</Version>
+    <Version>1.4.1</Version>
   </PropertyGroup>
 </Project>
