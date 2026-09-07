@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Reflection;
 using MiraAPI.Events;
 using MiraAPI.MeetingAbilities;
@@ -28,30 +29,26 @@ public sealed class RoleJotButton : TargetedMeetingButton
             ?.GetValue(MeetingHud.Instance) as Component;
         submitButton?.gameObject.SetActive(false);
 
-        HideVanillaVoteButtons();
+        var playerVoteArea = MeetingHud.Instance?.playerStates
+            .FirstOrDefault(p => p != null && p.PlayerId.Value == @event.TargetId);
+
+        if (playerVoteArea != null) HideConfirmButton(playerVoteArea);
     }
 
-    private static void HideVanillaVoteButtons()
+    [RegisterEvent]
+    public static void OnHandleVote(HandleVoteEvent @event)
     {
-        if (MeetingHud.Instance?.playerStates == null) return;
+        if (@event.VoteData.VotesRemaining <= 0) @event.Cancel();
+    }
 
-        foreach (var playerVoteArea in MeetingHud.Instance.playerStates)
+    private static void HideConfirmButton(PlayerVoteArea playerVoteArea)
+    {
+        foreach (var button in playerVoteArea.Buttons.GetComponentsInChildren<PassiveButton>(true))
         {
-            if (playerVoteArea == null) continue;
+            if (button == playerVoteArea.CancelButton) continue;
+            if (button.GetComponent<MeetingAbilityBehaviour>() != null) continue;
 
-            Component? voteButton = null;
-            var field = typeof(PlayerVoteArea).GetField(
-                "VoteButton",
-                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-
-            if (field?.GetValue(playerVoteArea) is Component fieldButton)
-                voteButton = fieldButton;
-
-            voteButton?.gameObject.SetActive(false);
-
-            // Some game versions expose the control only as a child object.
-            var childButton = playerVoteArea.transform.Find("VoteButton");
-            childButton?.gameObject.SetActive(false);
+            button.gameObject.SetActive(false);
         }
     }
 

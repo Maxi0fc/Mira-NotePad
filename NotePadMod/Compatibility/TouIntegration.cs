@@ -29,6 +29,7 @@ public static class TouIntegration
     private static PropertyInfo? _revealVisibleProp;
     private static PropertyInfo? _revealRoleProp;
     private static MethodInfo? _areTeammatesMethod;
+    private static MethodInfo? _addFakeChatMethod;
 
     public static void Initialize(Harmony harmony)
     {
@@ -142,6 +143,27 @@ public static class TouIntegration
             }
         }
 
+        var miscUtilsType = _touAssembly.GetType("TownOfUs.Utilities.MiscUtils");
+        _addFakeChatMethod = miscUtilsType?
+            .GetMethods(BindingFlags.Public | BindingFlags.Static)
+            .FirstOrDefault(method =>
+                method.Name == "AddFakeChat" && method.GetParameters().Length == 5);
+        var captureMethod = typeof(RoleInfoPatch).GetMethod(
+            nameof(RoleInfoPatch.CaptureFakeChatPatch),
+            BindingFlags.Public | BindingFlags.Static);
+        if (_addFakeChatMethod != null && captureMethod != null)
+        {
+            harmony.Patch(_addFakeChatMethod, postfix: new HarmonyMethod(captureMethod));
+            Log.LogInfo("[TouIntegration] Successfully hooked MiscUtils.AddFakeChat for independent fake bubbles.");
+        }
+
+        var addChatMethod = AccessTools.Method(typeof(ChatController), nameof(ChatController.AddChat));
+        if (addChatMethod != null && captureMethod != null)
+        {
+            harmony.Patch(addChatMethod, postfix: new HarmonyMethod(captureMethod));
+            Log.LogInfo("[TouIntegration] Successfully hooked ChatController.AddChat for independent fake bubbles.");
+        }
+
         var hudPatchesType = _touAssembly.GetType("TownOfUs.Patches.HudManagerPatches");
         if (hudPatchesType != null)
         {
@@ -183,6 +205,43 @@ public static class TouIntegration
         else
         {
             Log.LogWarning("[TouIntegration] TownOfUs.Modules.Components.HudManagerHelper type not found.");
+        }
+    }
+
+    public static bool AddFakeChatTo(ChatController target, string title, string message)
+    {
+        if (_addFakeChatMethod == null || HudManager.Instance == null || PlayerControl.LocalPlayer == null)
+            return false;
+
+        var chatProperty = typeof(HudManager).GetProperty(
+            "Chat",
+            BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+        if (chatProperty == null || !chatProperty.CanWrite)
+            return false;
+
+        var hud = HudManager.Instance;
+        var vanilla = hud.Chat;
+        try
+        {
+            chatProperty.SetValue(hud, target);
+            _addFakeChatMethod.Invoke(null, new object[]
+            {
+                PlayerControl.LocalPlayer.Data,
+                title,
+                message,
+                false,
+                true,
+            });
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Log.LogWarning($"[TouIntegration] Could not render fake bubble into independent chat: {ex.Message}");
+            return false;
+        }
+        finally
+        {
+            chatProperty.SetValue(hud, vanilla);
         }
     }
 
