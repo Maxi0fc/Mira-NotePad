@@ -5,19 +5,19 @@
     <Nullable>enable</Nullable>
     <LangVersion>latest</LangVersion>
     <Platforms>AnyCPU</Platforms>
-    <Version>1.4.1</Version>
+    <Version>1.4.2</Version>
     <NoWarn>$(NoWarn);CS0436;CS0618</NoWarn>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <GamePlatform Condition="'$(GamePlatform)' == ''">Steam</GamePlatform>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(GITHUB_ACTIONS)' != 'true'">
-    <AmongUsDir>/Users/neiljain/Library/Application Support/CrossOver/Bottles/Among Us/drive_c/Program Files (x86)/Steam/steamapps/common/Among Us</AmongUsDir>
+    <AmongUsDir>/Users/neiljain/Library/Application Support/CrossOver/Bottles/Mainly/drive_c/Program Files (x86)/Steam/steamapps/common/Among Us copy</AmongUsDir>
   </PropertyGroup>
 
   <!-- Lokala referenser -->
   <ItemGroup>
-  <PackageReference Include="TownOfUsMira" Version="1.7.2" />
+  <PackageReference Include="TownOfUsMira" Version="1.7.3" />
   <PackageReference Include="AllOfUs.MiraAPI" Version="0.5.0"/>
   <PackageReference Include="Reactor" Version="2.5.1-ci.384"/>  <!-- Changed from 2.5.1 -->
   <PackageReference Include="BepInEx.Unity.IL2CPP" Version="6.0.0-be.735" Private="false" ExcludeAssets="runtime;native" />
@@ -30,17 +30,13 @@
   <ItemGroup>
     <EmbeddedResource Include="Resources\JotButton.png" />
     <EmbeddedResource Include="Resources\notepad_logo.png" />
+    <EmbeddedResource Include="Resources\general_tab.png" />
+    <EmbeddedResource Include="Resources\roles_tab.png" />
+    <EmbeddedResource Include="Resources\DeleteInfoButton.png" />
     <EmbeddedResource Include="Resources\notepad-mod-win.bundle" />
     <EmbeddedResource Include="Resources\notepad-mod-android.bundle" Condition="Exists('Resources\notepad-mod-android.bundle')" />
     <EmbeddedResource Include="modinfo.json" />
   </ItemGroup>
 
-  <Target Name="PostBuild" AfterTargets="PostBuildEvent" Condition="'$(GITHUB_ACTIONS)' != 'true' and '$(DeployToAmongUs)' == 'true' and '$(AmongUsDir)' != ''">
-    <MakeDir Directories="$(AmongUsDir)\BepInEx\plugins\" />
-    <Copy
-      SourceFiles="$(OutputPath)$(AssemblyName).dll"
-      DestinationFolder="$(AmongUsDir)\BepInEx\plugins"
-      SkipUnchangedFiles="false" />
-    <Message Text="DLL deployed to $(AmongUsDir)\BepInEx\plugins" Importance="high" />
-  </Target>
+
 </Project>

@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Reflection;
 using MiraAPI.Events;
 using MiraAPI.MeetingAbilities;
@@ -27,6 +28,28 @@ public sealed class RoleJotButton : TargetedMeetingButton
             .GetField("m_SubmitButton", BindingFlags.Instance | BindingFlags.NonPublic)
             ?.GetValue(MeetingHud.Instance) as Component;
         submitButton?.gameObject.SetActive(false);
+
+        var playerVoteArea = MeetingHud.Instance?.playerStates
+            .FirstOrDefault(p => p != null && p.PlayerId.Value == @event.TargetId);
+
+        if (playerVoteArea != null) HideConfirmButton(playerVoteArea);
+    }
+
+    [RegisterEvent]
+    public static void OnHandleVote(HandleVoteEvent @event)
+    {
+        if (@event.VoteData.VotesRemaining <= 0) @event.Cancel();
+    }
+
+    private static void HideConfirmButton(PlayerVoteArea playerVoteArea)
+    {
+        foreach (var button in playerVoteArea.Buttons.GetComponentsInChildren<PassiveButton>(true))
+        {
+            if (button == playerVoteArea.CancelButton) continue;
+            if (button.GetComponent<MeetingAbilityBehaviour>() != null) continue;
+
+            button.gameObject.SetActive(false);
+        }
     }
 
     public void ForceJot(PlayerVoteArea playerVoteArea)

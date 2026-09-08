@@ -26,7 +26,7 @@ public class NotePadPlugin : BasePlugin, IMiraPlugin
     {
         Instance = this;
         Settings = new NotePadLocalSettings(Config);
-        ReactorCredits.Register("NotePad", "1.4.1", false, ReactorCredits.AlwaysShow);
+        ReactorCredits.Register("NotePad", "1.4.2", false, ReactorCredits.AlwaysShow);
 
         var harmony = new Harmony("maxi.notepad");
         harmony.PatchAll();

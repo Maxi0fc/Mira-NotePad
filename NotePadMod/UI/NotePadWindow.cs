@@ -1,4 +1,5 @@
 using System.Reflection;
+using System.Collections.Generic;
 using NotePadMod.Assets;
 using Reactor.Utilities.Attributes;
 using UnityEngine;
@@ -11,6 +12,18 @@ namespace NotePadMod.UI;
 [RegisterInIl2Cpp]
 public class NotePadWindow(nint ptr) : Minigame(ptr)
 {
+    private sealed class RoleInfoEntry
+    {
+        public string Snippet = "";
+        public GameObject? DeleteButton;
+    }
+
+    private enum NoteTab
+    {
+        General,
+        RoleInfo,
+    }
+
     private static readonly BepInEx.Logging.ManualLogSource Log =
         BepInEx.Logging.Logger.CreateLogSource("NotePad");
 
@@ -18,15 +31,31 @@ public class NotePadWindow(nint ptr) : Minigame(ptr)
     private static float _lastToggle = -1f;
     private string _content  = "";
     private int    _cursorPos = 0;
+    private string _generalContent = "";
+    private int    _generalCursorPos;
+    private int    _generalFirstVisibleLine;
+    private string _roleInfoContent = "";
+    private readonly List<RoleInfoEntry> _roleInfoEntries = new();
+    private int    _roleInfoCursorPos;
+    private int    _roleInfoFirstVisibleLine;
+    private NoteTab _activeTab = NoteTab.General;
     private bool   _focused  = false;
     private float  _cursorBlink  = 0f;
     private bool   _cursorVisible = true;
     private TouchScreenKeyboard? _touchKeyboard;
     private TextMeshPro? _displayTmp;
+    private int _firstVisibleLine;
+    private float _scrollRemainder;
     private float _backspaceHeld = 0f;
     private float _deleteHeld    = 0f;
     private GameObject?    _panelInstance;
+    private GameObject?    _tabButton;
+    private GameObject?    _linesObject;
+    private GameObject?    _roleInfoLineOverlay;
     private SpriteRenderer? _backgroundRenderer;
+    private Color _generalBackgroundColor = Color.white;
+    private Sprite? _generalTabSprite;
+    private Sprite? _roleInfoTabSprite;
     private const float HoldDelay  = 0.4f;
     private const float HoldRepeat = 0.05f;
     private const int   MaxLines   = 13;
@@ -127,14 +156,23 @@ public class NotePadWindow(nint ptr) : Minigame(ptr)
         EnsureInstance();
         if (_instance == null) return;
 
-        string separator = _instance._content.Length > 0 ? "\n" : "";
-        string newContent = _instance._content + separator + text;
+        _instance.AppendToTab(NoteTab.General, text);
+    }
 
-        if (_instance.GetLineCount(newContent) <= MaxLines)
-            _instance._content = newContent;
+    public static void AppendRoleInfoText(string text)
+    {
+        EnsureInstance();
+        if (_instance == null) return;
 
-        _instance._cursorPos = _instance._content.Length;
-        _instance.UpdateDisplay();
+        _instance.AppendToTab(NoteTab.RoleInfo, text);
+    }
+
+    public static void AppendRoleInfoText(string title, string message)
+    {
+        EnsureInstance();
+        if (_instance == null) return;
+
+        _instance.AppendRoleInfoEntry(title, message);
     }
 
     public static void CloseWindow()
@@ -153,9 +191,112 @@ public class NotePadWindow(nint ptr) : Minigame(ptr)
     public static void ClearText()
     {
         if (_instance == null) return;
-        _instance._content   = "";
-        _instance._cursorPos = 0;
+        _instance._generalContent = "";
+        _instance._generalCursorPos = 0;
+        _instance._generalFirstVisibleLine = 0;
+        _instance._roleInfoContent = "";
+        _instance.ClearRoleInfoEntries();
+        _instance._roleInfoCursorPos = 0;
+        _instance._roleInfoFirstVisibleLine = 0;
+        _instance.LoadActiveTab();
         _instance.UpdateDisplay();
+    }
+
+    private void AppendToTab(NoteTab tab, string text)
+    {
+        SaveActiveTab();
+
+        if (tab == NoteTab.General)
+        {
+            string separator = _generalContent.Length > 0 ? "\n" : "";
+            _generalContent += separator + text;
+            _generalCursorPos = _generalContent.Length;
+        }
+        else
+        {
+            string separator = _roleInfoContent.Length > 0 ? "\n" : "";
+            _roleInfoContent += separator + text;
+            _roleInfoCursorPos = _roleInfoContent.Length;
+        }
+
+        LoadActiveTab();
+        UpdateDisplay();
+    }
+
+    private void AppendRoleInfoEntry(string title, string message)
+    {
+        SaveActiveTab();
+        string snippet = $"{title}\n{message}\n\n";
+        _roleInfoEntries.Add(new RoleInfoEntry { Snippet = snippet });
+        _roleInfoContent += (_roleInfoContent.Length > 0 ? "\n" : "") + snippet;
+        _roleInfoCursorPos = _roleInfoContent.Length;
+        LoadActiveTab();
+        UpdateDisplay();
+    }
+
+    private void ClearRoleInfoEntries()
+    {
+        foreach (var entry in _roleInfoEntries)
+        {
+            if (entry.DeleteButton != null)
+                Object.Destroy(entry.DeleteButton);
+        }
+        _roleInfoEntries.Clear();
+    }
+
+    private void SaveActiveTab()
+    {
+        if (_activeTab == NoteTab.General)
+        {
+            _generalContent = _content;
+            _generalCursorPos = _cursorPos;
+            _generalFirstVisibleLine = _firstVisibleLine;
+        }
+        else
+        {
+            _roleInfoContent = _content;
+            _roleInfoCursorPos = _cursorPos;
+            _roleInfoFirstVisibleLine = _firstVisibleLine;
+        }
+    }
+
+    private void LoadActiveTab()
+    {
+        if (_activeTab == NoteTab.General)
+        {
+            _content = _generalContent;
+            _cursorPos = _generalCursorPos;
+            _firstVisibleLine = _generalFirstVisibleLine;
+        }
+        else
+        {
+            _content = _roleInfoContent;
+            _cursorPos = _roleInfoCursorPos;
+            _firstVisibleLine = _roleInfoFirstVisibleLine;
+        }
+    }
+
+    private void SwitchTab(NoteTab tab)
+    {
+        if (_activeTab == tab) return;
+        SaveActiveTab();
+        _activeTab = tab;
+        LoadActiveTab();
+        _cursorVisible = true;
+        _cursorBlink = 0f;
+        UpdateTabVisuals();
+        UpdateDisplay();
+    }
+
+    private void ClearRoleInfoText()
+    {
+        SaveActiveTab();
+        _roleInfoContent = "";
+        ClearRoleInfoEntries();
+        _roleInfoCursorPos = 0;
+        _roleInfoFirstVisibleLine = 0;
+        LoadActiveTab();
+        UpdateDisplay();
     }
 
     public static void ForceToFront() => _instance?.transform.SetAsLastSibling();
@@ -188,12 +329,16 @@ public class NotePadWindow(nint ptr) : Minigame(ptr)
         bool deleteHeld    = Input.GetKey(KeyCode.Delete);
         bool enter         = Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter);
         bool escape        = Input.GetKeyDown(KeyCode.Escape);
+        float scroll       = Input.mouseScrollDelta.y;
         string typed       = Input.inputString;
 
         if (escape) { CloseWindow(); return; }
 
         if (mouseDown)
         {
+            if (IsMouseOverManagedButton())
+                return;
+
             Vector3 mouseWorld = Camera.main.ScreenToWorldPoint(Input.mousePosition);
 
             bool insideWindow;
@@ -220,6 +365,20 @@ public class NotePadWindow(nint ptr) : Minigame(ptr)
             }
         }
 
+        if (scroll != 0f)
+        {
+            _scrollRemainder += scroll;
+            int scrollLines = Mathf.FloorToInt(Mathf.Abs(_scrollRemainder));
+            if (scrollLines > 0)
+            {
+                _firstVisibleLine = Mathf.Max(
+                    0,
+                    _firstVisibleLine - (int)Mathf.Sign(_scrollRemainder) * scrollLines);
+                _scrollRemainder -= Mathf.Sign(_scrollRemainder) * scrollLines;
+                UpdateDisplay(false);
+            }
+        }
+
         if (!_focused) return;
         Input.ResetInputAxes();
 
@@ -243,7 +402,7 @@ public class NotePadWindow(nint ptr) : Minigame(ptr)
         {
             _cursorBlink   = 0f;
             _cursorVisible = !_cursorVisible;
-            UpdateDisplay();
+            UpdateDisplay(false);
         }
 
         bool changed = false;
@@ -293,23 +452,17 @@ public class NotePadWindow(nint ptr) : Minigame(ptr)
         if (enter)
         {
             string newContent = _content.Insert(_cursorPos, "\n");
-            if (GetLineCount(newContent) <= MaxLines)
-            {
-                _content = newContent;
-                _cursorPos++;
-                _cursorVisible = true; _cursorBlink = 0f; changed = true;
-            }
+            _content = newContent;
+            _cursorPos++;
+            _cursorVisible = true; _cursorBlink = 0f; changed = true;
         }
         foreach (char c in typed)
         {
             if (c == '\b' || c == '\r' || c == '\n') continue;
             string newContent = _content.Insert(_cursorPos, c.ToString());
-            if (GetLineCount(newContent) <= MaxLines)
-            {
-                _content = newContent;
-                _cursorPos++;
-                _cursorVisible = true; _cursorBlink = 0f; changed = true;
-            }
+            _content = newContent;
+            _cursorPos++;
+            _cursorVisible = true; _cursorBlink = 0f; changed = true;
         }
 
         if (changed) UpdateDisplay();
@@ -365,17 +518,30 @@ public class NotePadWindow(nint ptr) : Minigame(ptr)
                 bestChar = localMouse.x > charCenter.x ? i + 1 : i;
             }
         }
-        _cursorPos = Mathf.Clamp(bestChar, 0, _content.Length);
+        int firstVisibleChar = GetLineStart(_content, _firstVisibleLine);
+        _cursorPos = Mathf.Clamp(firstVisibleChar + bestChar, 0, _content.Length);
         _cursorVisible = true; _cursorBlink = 0f;
         UpdateDisplay();
     }
 
-    private void UpdateDisplay()
+    private void UpdateDisplay(bool followCursor = true)
     {
         if (_displayTmp == null) return;
-        string display = _content;
+
+        int lineCount = GetLogicalLineCount(_content);
+        if (followCursor)
+            EnsureCursorVisible();
+        _firstVisibleLine = Mathf.Clamp(_firstVisibleLine, 0, Mathf.Max(0, lineCount - MaxLines));
+
+        int firstChar = GetLineStart(_content, _firstVisibleLine);
+        int lastLine = Mathf.Min(lineCount, _firstVisibleLine + MaxLines);
+        int lastChar = lastLine >= lineCount ? _content.Length : GetLineStart(_content, lastLine);
+        string visibleContent = _content.Substring(firstChar, lastChar - firstChar);
+
+        int cursorPos = Mathf.Clamp(_cursorPos, firstChar, lastChar);
+        string display = visibleContent;
         if (_focused && _cursorVisible)
-            display = display.Insert(Mathf.Clamp(_cursorPos, 0, display.Length), "|");
+            display = display.Insert(cursorPos - firstChar, "|");
         display = RoleColorizer.Apply(display);
         display = ModifierColorizer.Apply(display);
         string? colorTag = GetPlainTextColorTag();
@@ -383,6 +549,310 @@ public class NotePadWindow(nint ptr) : Minigame(ptr)
             display = $"<color={colorTag}>{display}</color>";
 
         _displayTmp.text = display;
+        UpdateRoleInfoDeleteButtons();
+    }
+
+    private void UpdateRoleInfoDeleteButtons()
+    {
+        HideRoleInfoDeleteButtons();
+        if (_activeTab != NoteTab.RoleInfo || _panelInstance == null || _displayTmp == null)
+        {
+            return;
+        }
+
+        var template = _panelInstance.transform.Find("CloseButton");
+        if (template == null) return;
+
+        var backgroundBounds = _backgroundRenderer != null
+            ? _backgroundRenderer.bounds
+            : new Bounds(transform.position, new Vector3(4f, 4f, 1f));
+        float lineHeight = _displayTmp.textInfo.lineInfo.Length > 0
+            ? _displayTmp.textInfo.lineInfo[0].lineHeight * _displayTmp.transform.lossyScale.y
+            : 0.2f;
+        int searchStart = 0;
+        foreach (var entry in _roleInfoEntries)
+        {
+            int entryStart = _content.IndexOf(entry.Snippet, searchStart, System.StringComparison.Ordinal);
+            if (entryStart < 0)
+                continue;
+            searchStart = entryStart + entry.Snippet.Length;
+
+            int entryLine = GetLogicalLineBefore(_content, entryStart);
+            int visibleLine = entryLine - _firstVisibleLine;
+            if (visibleLine < 0 || visibleLine >= MaxLines)
+                continue;
+
+            if (entry.DeleteButton == null)
+            {
+                entry.DeleteButton = Object.Instantiate(template.gameObject, _panelInstance.transform);
+                entry.DeleteButton.name = "RoleInfoDeleteButton";
+                var passiveButton = entry.DeleteButton.GetComponent<PassiveButton>();
+                if (passiveButton != null)
+                {
+                    passiveButton.OnClick = new Button.ButtonClickedEvent();
+                    var capturedEntry = entry;
+                    passiveButton.OnClick.AddListener((UnityAction)(() => RemoveRoleInfoEntry(capturedEntry)));
+                }
+                foreach (var renderer in entry.DeleteButton.GetComponentsInChildren<SpriteRenderer>(true))
+    renderer.sprite = NotepadAssets.DeleteInfoSprite.LoadAsset();
+                SetSortingOrderRecursively(entry.DeleteButton.transform, PanelSortingOrder + 3);
+            }
+
+            entry.DeleteButton.SetActive(true);
+            float buttonY = backgroundBounds.max.y - TextPadding - TextTopOffset - (visibleLine * lineHeight);
+            Vector3 worldPosition = new Vector3(
+                backgroundBounds.max.x - 0.28f,
+                buttonY,
+                _displayTmp.transform.position.z - 0.25f);
+            entry.DeleteButton.transform.position = worldPosition;
+            entry.DeleteButton.transform.localScale = Vector3.one * 0.3f;
+        }
+    }
+
+    private void RemoveRoleInfoEntry(RoleInfoEntry entry)
+    {
+        SaveActiveTab();
+        int start = _roleInfoContent.IndexOf(entry.Snippet, System.StringComparison.Ordinal);
+        if (start >= 0)
+            _roleInfoContent = _roleInfoContent.Remove(start, entry.Snippet.Length);
+        if (entry.DeleteButton != null)
+        {
+            Object.Destroy(entry.DeleteButton);
+            entry.DeleteButton = null;
+        }
+        _roleInfoEntries.Remove(entry);
+        if (_roleInfoCursorPos > _roleInfoContent.Length)
+            _roleInfoCursorPos = _roleInfoContent.Length;
+        LoadActiveTab();
+        UpdateDisplay();
+    }
+
+    private void HideRoleInfoDeleteButtons()
+    {
+        foreach (var entry in _roleInfoEntries)
+        {
+            if (entry.DeleteButton != null)
+                entry.DeleteButton.SetActive(false);
+        }
+    }
+
+    private static int GetLogicalLineBefore(string text, int characterIndex)
+    {
+        int line = 0;
+        int end = Mathf.Clamp(characterIndex, 0, text.Length);
+        for (int i = 0; i < end; i++)
+        {
+            if (text[i] == '\n') line++;
+        }
+        return line;
+    }
+
+    private bool IsMouseOverManagedButton()
+    {
+        Vector3 mouseWorld = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+        mouseWorld.z = transform.position.z;
+
+        var buttons = new List<GameObject?> { _tabButton };
+        foreach (var entry in _roleInfoEntries)
+            buttons.Add(entry.DeleteButton);
+        foreach (var button in buttons)
+        {
+            if (button == null || !button.activeSelf) continue;
+            var renderer = button.GetComponentInChildren<SpriteRenderer>();
+            if (renderer != null && renderer.bounds.Contains(mouseWorld))
+                return true;
+        }
+
+        return false;
+    }
+
+    private void UpdateTabVisuals()
+    {
+        bool roleInfoActive = _activeTab == NoteTab.RoleInfo;
+        SetTabButtonSprite(roleInfoActive);
+        SetButtonLabel(_tabButton, roleInfoActive ? "ROLE INFO" : "GENERAL");
+        if (_linesObject != null)
+            _linesObject.SetActive(!roleInfoActive);
+        if (_backgroundRenderer != null)
+        {
+            _backgroundRenderer.color = roleInfoActive
+                ? new Color(0.871f, 0.987f, 1.185f)
+                : _generalBackgroundColor;
+        }
+        if (_roleInfoLineOverlay != null)
+            _roleInfoLineOverlay.SetActive(roleInfoActive);
+    }
+
+    private void SetTabButtonSprite(bool roleInfoActive)
+    {
+        if (_tabButton == null) return;
+        _generalTabSprite ??= NotepadAssets.GeneralTabSprite.LoadAsset();
+        _roleInfoTabSprite ??= NotepadAssets.RolesTabSprite.LoadAsset();
+
+        var sprite = roleInfoActive ? _roleInfoTabSprite : _generalTabSprite;
+        if (sprite == null) return;
+        foreach (var renderer in _tabButton.GetComponentsInChildren<SpriteRenderer>(true))
+            renderer.sprite = sprite;
+    }
+
+    private static void SetButtonSprite(GameObject? button, bool active)
+    {
+        if (button == null) return;
+        var sprite = active
+            ? NotepadAssets.NotepadButtonActiveSprite.LoadAsset()
+            : NotepadAssets.NotepadButtonSprite.LoadAsset();
+        if (sprite == null) return;
+
+        foreach (var renderer in button.GetComponentsInChildren<SpriteRenderer>(true))
+            renderer.sprite = sprite;
+    }
+
+    private static void SetButtonLabel(GameObject? button, string label)
+    {
+        if (button == null) return;
+        var labelObject = button.transform.Find("TabButtonLabel");
+        var labelTmp = labelObject?.GetComponent<TextMeshPro>();
+        if (labelTmp != null)
+            labelTmp.text = label;
+    }
+
+    private GameObject? CreateSideButton(
+        Transform template,
+        string name,
+        Vector3 localPosition,
+        string label,
+        UnityAction action)
+    {
+        var button = Object.Instantiate(template.gameObject, _panelInstance!.transform);
+        button.name = name;
+        button.transform.localPosition = localPosition;
+        button.transform.localScale = Vector3.one * 0.55f;
+
+        var passiveButton = button.GetComponent<PassiveButton>();
+        if (passiveButton == null) return button;
+        passiveButton.OnClick = new Button.ButtonClickedEvent();
+        passiveButton.OnClick.AddListener(action);
+        if (name == "TabButton")
+            SetTabButtonSprite(false);
+        else
+            SetButtonSprite(button, false);
+        SetSortingOrderRecursively(button.transform, PanelSortingOrder + 3);
+
+        if (_displayTmp != null)
+        {
+            var labelObject = Object.Instantiate(_displayTmp.gameObject, button.transform);
+            labelObject.name = "TabButtonLabel";
+            labelObject.transform.localPosition = new Vector3(0f, 0f, -0.2f);
+            labelObject.transform.localScale = Vector3.one * 0.16f;
+            var labelTmp = labelObject.GetComponent<TextMeshPro>();
+            if (labelTmp != null)
+            {
+                labelTmp.text = label;
+                labelTmp.color = Color.black;
+                labelTmp.alignment = TextAlignmentOptions.Center;
+                labelTmp.enableWordWrapping = false;
+                labelTmp.overflowMode = TextOverflowModes.Overflow;
+                labelTmp.sortingOrder = PanelSortingOrder + 4;
+                ApplyOutline(labelTmp);
+            }
+        }
+
+        return button;
+    }
+
+    private void CreateTabControls()
+    {
+        var template = _panelInstance?.transform.Find("CloseButton");
+        if (template == null || _backgroundRenderer == null) return;
+
+        var bounds = _backgroundRenderer.bounds;
+        var localLeft = transform.InverseTransformPoint(
+            new Vector3(bounds.min.x, bounds.center.y, bounds.center.z)).x;
+        float buttonX = localLeft - 0.38f;
+        float topY = transform.InverseTransformPoint(
+            new Vector3(bounds.max.x, bounds.max.y, bounds.center.z)).y - 0.95f;
+
+        _tabButton = CreateSideButton(
+            template,
+            "TabButton",
+            new Vector3(buttonX, topY, -0.2f),
+            "ROLE",
+            (UnityAction)(() => SwitchTab(
+                _activeTab == NoteTab.General ? NoteTab.RoleInfo : NoteTab.General)));
+        SetTabButtonSprite(_activeTab == NoteTab.RoleInfo);
+
+        CreateRoleInfoLineOverlay(bounds);
+        UpdateTabVisuals();
+    }
+
+    private void CreateRoleInfoLineOverlay(Bounds backgroundBounds)
+    {
+        var overlay = new GameObject("RoleInfoLineOverlay");
+        overlay.transform.SetParent(transform, false);
+        overlay.transform.localPosition = transform.InverseTransformPoint(backgroundBounds.center);
+        overlay.transform.localPosition = new Vector3(
+            overlay.transform.localPosition.x,
+            overlay.transform.localPosition.y,
+            -0.05f);
+
+        var renderer = overlay.AddComponent<SpriteRenderer>();
+        renderer.sprite = Sprite.Create(
+            Texture2D.whiteTexture,
+            new Rect(0f, 0f, 1f, 1f),
+            new Vector2(0.5f, 0.5f),
+            1f);
+        renderer.color = Color.white;
+        renderer.sortingOrder = PanelSortingOrder + 1;
+        overlay.transform.localScale = new Vector3(
+            Mathf.Max(0.1f, backgroundBounds.size.x - 0.45f),
+            Mathf.Max(0.1f, backgroundBounds.size.y - 0.45f),
+            1f);
+        _roleInfoLineOverlay = overlay;
+    }
+
+    private static int GetLineStart(string text, int line)
+    {
+        if (line <= 0) return 0;
+
+        int currentLine = 0;
+        for (int i = 0; i < text.Length; i++)
+        {
+            if (text[i] != '\n') continue;
+            currentLine++;
+            if (currentLine == line) return i + 1;
+        }
+
+        return text.Length;
+    }
+
+    private static int GetLogicalLineCount(string text)
+    {
+        int count = 1;
+        for (int i = 0; i < text.Length; i++)
+        {
+            if (text[i] == '\n') count++;
+        }
+        return count;
+    }
+
+    private int GetCursorLine()
+    {
+        int line = 0;
+        int cursor = Mathf.Clamp(_cursorPos, 0, _content.Length);
+        for (int i = 0; i < cursor; i++)
+        {
+            if (_content[i] == '\n') line++;
+        }
+        return line;
+    }
+
+    private void EnsureCursorVisible()
+    {
+        int cursorLine = GetCursorLine();
+        if (cursorLine < _firstVisibleLine)
+            _firstVisibleLine = cursorLine;
+        else if (cursorLine >= _firstVisibleLine + MaxLines)
+            _firstVisibleLine = cursorLine - MaxLines + 1;
     }
     private static void SetLayerRecursively(GameObject go, int layer)
     {
@@ -448,10 +918,17 @@ public class NotePadWindow(nint ptr) : Minigame(ptr)
         _panelInstance.transform.localScale = Vector3.one;
         SetLayerRecursively(_panelInstance, 5);
 
+        var textboxT = _panelInstance.transform.Find("Textbox");
+        var linesT = textboxT != null ? textboxT.Find("Lines") : null;
+        if (linesT != null)
+            _linesObject = linesT.gameObject;
+
         LogHierarchy(_panelInstance.transform, "");
 
         var backgroundT = _panelInstance.transform.Find("Background");
         _backgroundRenderer = backgroundT != null ? backgroundT.GetComponent<SpriteRenderer>() : null;
+        if (_backgroundRenderer != null)
+            _generalBackgroundColor = _backgroundRenderer.color;
         SetSortingOrderRecursively(_panelInstance.transform, PanelSortingOrder);
         ApplyOutlinesRecursively(_panelInstance.transform);
         var template = HudManager.Instance?.Chat?.freeChatField?.textArea;
@@ -518,6 +995,8 @@ public class NotePadWindow(nint ptr) : Minigame(ptr)
             closeButton.OnClick = new Button.ButtonClickedEvent();
             closeButton.OnClick.AddListener((UnityAction)CloseWindow);
         }
+
+        CreateTabControls();
 
         UpdateDisplay();
     }
