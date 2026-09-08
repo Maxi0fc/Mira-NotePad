@@ -42,5 +42,10 @@ public static class NotepadAssets
     public static readonly LoadableAsset<Sprite> NotepadButtonSprite = new LoadableBundleAsset<Sprite>("NotepadButton", Bundle);
     public static readonly LoadableAsset<Sprite> NotepadButtonActiveSprite = new LoadableBundleAsset<Sprite>("NotepadButtonActive", Bundle);
     public static readonly LoadableAsset<Sprite> JotButtonSprite = new LoadableResourceAsset("NotePadMod.Resources.JotButton.png");
+    public static readonly LoadableAsset<Sprite> GeneralTabSprite = new LoadableResourceAsset("NotePadMod.Resources.general_tab.png", 1000f);
+    public static readonly LoadableAsset<Sprite> RolesTabSprite = new LoadableResourceAsset("NotePadMod.Resources.roles_tab.png", 1000f);
+    public static readonly LoadableAsset<Sprite> DeleteInfoSprite = new LoadableResourceAsset("NotePadMod.Resources.DeleteInfoButton.png", 100f);
+
+
 
 }
