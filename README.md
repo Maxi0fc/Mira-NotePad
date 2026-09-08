@@ -8,7 +8,9 @@ Toggle a notepad window from the HUD and jot stuff down mid-game. On its own it'
 
 ### Notepad window
 - Toggle with a HUD button (position configurable, top row or second row)
-- Full text editing: arrow key navigation, Home/End, click-to-place cursor, held backspace/delete with repeat
+- General and Role Info tabs with independent editable text
+- Role Info tab hides the ruled lines and includes a sprite-backed clear button
+- Full text editing: arrow key navigation, Home/End, click-to-place cursor, mouse-wheel scrolling, held backspace/delete with repeat
 - Text clears automatically on game start and when you return to the lobby
 - Configurable text color (black, white, red, yellow, green, cyan, grey)
 
