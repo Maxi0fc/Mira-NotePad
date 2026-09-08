@@ -17,7 +17,7 @@
 
   <!-- Lokala referenser -->
   <ItemGroup>
-  <PackageReference Include="TownOfUsMira" Version="1.7.2" />
+  <PackageReference Include="TownOfUsMira" Version="1.7.3" />
   <PackageReference Include="AllOfUs.MiraAPI" Version="0.5.0"/>
   <PackageReference Include="Reactor" Version="2.5.1-ci.384"/>  <!-- Changed from 2.5.1 -->
   <PackageReference Include="BepInEx.Unity.IL2CPP" Version="6.0.0-be.735" Private="false" ExcludeAssets="runtime;native" />
@@ -37,5 +37,6 @@
     <EmbeddedResource Include="Resources\notepad-mod-android.bundle" Condition="Exists('Resources\notepad-mod-android.bundle')" />
     <EmbeddedResource Include="modinfo.json" />
   </ItemGroup>
+
 
 </Project>
