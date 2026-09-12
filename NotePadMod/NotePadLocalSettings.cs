@@ -1,6 +1,7 @@
 using BepInEx.Configuration;
 using MiraAPI.LocalSettings;
 using MiraAPI.LocalSettings.Attributes;
+using MiraAPI.Utilities;
 using MiraAPI.Utilities.Assets;
 using UnityEngine;
 
@@ -75,4 +76,22 @@ public sealed class NotePadLocalSettings(ConfigFile config) : LocalSettingsTab(c
             "Appearance",
             "Show Modifier Icons",
             true);
+
+    [LocalSliderSetting(min: 0.5f, max: 1f, displayValue: true, formatString: "0%",
+                        suffixType: MiraNumberSuffixes.Percent, roundValue: false)]
+    public ConfigEntry<float> ScaleFactor { get; private set; } =
+        config.Bind(
+            "Appearance",
+            "Scale Factor",
+            1f);
+
+    public override void OnOptionChanged(ConfigEntryBase changedSetting)
+    {
+        base.OnOptionChanged(changedSetting);
+
+        if (changedSetting == ScaleFactor)
+        {
+            NotePadMod.UI.NotePadWindow.ApplyScale();
+        }
+    }
 }
