@@ -41,13 +41,6 @@ public static class HudManagerPatch
 
         if (_miraHudHelperType != null)
         {
-            /*
-             * These are plain public static FIELDS on MiraHudHelper,
-             * not C# properties - GetProperty() here would always
-             * silently return null, permanently forcing every row
-             * lookup down to the fallback paths below regardless of
-             * timing or patch order. Use GetField().
-             */
             _uiTopRightField = _miraHudHelperType.GetField("UiTopRight", BindingFlags.Public | BindingFlags.Static);
             _extraUiTopRightField = _miraHudHelperType.GetField("ExtraUiTopRight", BindingFlags.Public | BindingFlags.Static);
             _uiGridField = _miraHudHelperType.GetField("UiGrid", BindingFlags.Public | BindingFlags.Static);

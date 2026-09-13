@@ -27,6 +27,7 @@ public static class GameFlowPatch
     {
         NotePadWindow.ClearText();
         NotePadWindow.CloseWindow();
+        JotedRoleLabels.Clear();
     }
     [HarmonyPatch(typeof(MeetingHud), nameof(MeetingHud.Start))]
     [HarmonyPostfix]
@@ -36,5 +37,9 @@ public static class GameFlowPatch
     public static void OnMeetingEnd() => NotePadWindow.CloseWindow();
     [HarmonyPatch(typeof(EndGameManager), nameof(EndGameManager.Start))]
     [HarmonyPostfix]
-    public static void OnEndGame() => NotePadWindow.CloseWindow();
+    public static void OnEndGame()
+    {
+        NotePadWindow.CloseWindow();
+        JotedRoleLabels.Clear();
+    }
 }

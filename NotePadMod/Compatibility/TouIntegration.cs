@@ -257,12 +257,6 @@ public static class TouIntegration
 
         try
         {
-            /*
-             * Once the local player is dead, dead players typically
-             * see everyone's real role - so any jotted guess becomes
-             * redundant/stale the moment the local player dies,
-             * regardless of teammate status or reveal modifiers.
-             */
             if (PlayerControl.LocalPlayer.Data != null &&
                 PlayerControl.LocalPlayer.Data.IsDead)
             {

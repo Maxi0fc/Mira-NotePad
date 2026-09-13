@@ -85,11 +85,6 @@ public sealed class RoleJotButton : TargetedMeetingButton
 
         var targetId = playerVoteArea.PlayerId.Value;
 
-        /*
-         * Clicking Jot on a player who's already jotted removes
-         * the label and restores their panel, instead of opening
-         * the picker again to overwrite it.
-         */
         if (JotedRoleLabels.TryGetLabel(targetId, out _))
         {
             JottedLabelPatch.RemoveJotedLabel(targetId);
