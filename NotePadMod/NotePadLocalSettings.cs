@@ -78,7 +78,7 @@ public sealed class NotePadLocalSettings(ConfigFile config) : LocalSettingsTab(c
             true);
 
     [LocalSliderSetting(min: 0.5f, max: 1f, displayValue: true, formatString: "0%",
-                        suffixType: MiraNumberSuffixes.Percent, roundValue: false)]
+                        suffixType: MiraNumberSuffixes.None, roundValue: false)]
     public ConfigEntry<float> ScaleFactor { get; private set; } =
         config.Bind(
             "Appearance",
