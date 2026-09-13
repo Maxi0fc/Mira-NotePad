@@ -5,7 +5,7 @@
     <Nullable>enable</Nullable>
     <LangVersion>latest</LangVersion>
     <Platforms>AnyCPU</Platforms>
-    <Version>1.4.2</Version>
+    <Version>1.4.3</Version>
     <NoWarn>$(NoWarn);CS0436;CS0618</NoWarn>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <GamePlatform Condition="'$(GamePlatform)' == ''">Steam</GamePlatform>
@@ -37,13 +37,6 @@
     <EmbeddedResource Include="Resources\notepad-mod-android.bundle" Condition="Exists('Resources\notepad-mod-android.bundle')" />
     <EmbeddedResource Include="modinfo.json" />
   </ItemGroup>
-    <Target Name="CopyDllToAnotherFolder" AfterTargets="Build">
-  <Copy SourceFiles="$(TargetDir)$(TargetName).dll" 
-        DestinationFolder="/Users/neiljain/Library/Application Support/CrossOver/Bottles/Mainly/drive_c/Program Files (x86)/Steam/steamapps/common/Among Us/BepInEx/plugins" 
-        SkipUnchangedFiles="true" />
-        <Copy SourceFiles="$(TargetDir)$(TargetName).dll" 
-        DestinationFolder="/Users/neiljain/Library/Application Support/CrossOver/Bottles/Mainly/drive_c/Program Files (x86)/Steam/steamapps/common/Among Us copy/BepInEx/plugins" 
-        SkipUnchangedFiles="true" />
-</Target>
+
 
 </Project>
