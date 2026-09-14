@@ -53,6 +53,7 @@ public class NotePadWindow(nint ptr) : Minigame(ptr)
     private GameObject?    _linesObject;
     private GameObject?    _roleInfoLineOverlay;
     private SpriteRenderer? _backgroundRenderer;
+    private Transform?     _scaleRoot;
     private Color _generalBackgroundColor = Color.white;
     private Sprite? _generalTabSprite;
     private Sprite? _roleInfoTabSprite;
@@ -142,6 +143,7 @@ public class NotePadWindow(nint ptr) : Minigame(ptr)
         if (_instance == null) return;
 
         _instance.transform.localPosition = GetWindowPosition();
+        ApplyScale();
         _instance.gameObject.SetActive(true);
         _instance.transform.SetAsLastSibling();
         _instance._focused = true;
@@ -149,6 +151,19 @@ public class NotePadWindow(nint ptr) : Minigame(ptr)
 
         StopLocalPlayer();
         Input.ResetInputAxes();
+    }
+
+    /// <summary>
+    /// Applies the current Scale Factor local setting to the notepad window.
+    /// Scales the panel, text, and side buttons together uniformly so every
+    /// element keeps its position relative to the notepad window.
+    /// </summary>
+    public static void ApplyScale()
+    {
+        if (_instance == null || _instance._scaleRoot == null) return;
+
+        float scale = Mathf.Clamp(NotePadPlugin.Settings.ScaleFactor.Value, 0.1f, 1f);
+        _instance._scaleRoot.localScale = Vector3.one * scale;
     }
 
     public static void AppendText(string text)
@@ -788,7 +803,7 @@ public class NotePadWindow(nint ptr) : Minigame(ptr)
     private void CreateRoleInfoLineOverlay(Bounds backgroundBounds)
     {
         var overlay = new GameObject("RoleInfoLineOverlay");
-        overlay.transform.SetParent(transform, false);
+        overlay.transform.SetParent(_scaleRoot, false);
         overlay.transform.localPosition = transform.InverseTransformPoint(backgroundBounds.center);
         overlay.transform.localPosition = new Vector3(
             overlay.transform.localPosition.x,
@@ -905,6 +920,12 @@ public class NotePadWindow(nint ptr) : Minigame(ptr)
     private void Start()
     {
         gameObject.layer = 5;
+
+        var scaleRootGo = new GameObject("ScaleRoot");
+        scaleRootGo.transform.SetParent(transform, false);
+        scaleRootGo.layer = 5;
+        _scaleRoot = scaleRootGo.transform;
+
         var prefab = NotepadAssets.Notepad.LoadAsset();
         if (prefab == null)
         {
@@ -912,7 +933,7 @@ public class NotePadWindow(nint ptr) : Minigame(ptr)
             return;
         }
 
-        _panelInstance = Object.Instantiate(prefab, transform);
+        _panelInstance = Object.Instantiate(prefab, _scaleRoot);
         _panelInstance.name = "Panel";
         _panelInstance.transform.localPosition = Vector3.zero;
         _panelInstance.transform.localScale = Vector3.one;
@@ -938,7 +959,7 @@ public class NotePadWindow(nint ptr) : Minigame(ptr)
         }
         else
         {
-            var dispGo = Object.Instantiate(template.outputText.gameObject, transform);
+            var dispGo = Object.Instantiate(template.outputText.gameObject, _scaleRoot);
             dispGo.name  = "NoteText";
             dispGo.layer = 5;
             dispGo.transform.localScale = new Vector3(0.7f, 0.7f, 1f);
@@ -999,6 +1020,7 @@ public class NotePadWindow(nint ptr) : Minigame(ptr)
         CreateTabControls();
 
         UpdateDisplay();
+        ApplyScale();
     }
 
     private void OnDestroy() => _instance = null;

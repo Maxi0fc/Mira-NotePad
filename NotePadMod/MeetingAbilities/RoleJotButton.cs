@@ -1,5 +1,4 @@
 using System;
-using System.Linq;
 using System.Reflection;
 using MiraAPI.Events;
 using MiraAPI.MeetingAbilities;
@@ -18,6 +17,17 @@ public sealed class RoleJotButton : TargetedMeetingButton
 {
     public static event Action<byte>? JotRequested;
 
+    /*
+     * MiraAPI's CreateButton() names each ability's GameObject
+     * "{Name}Button" (see TargetedMeetingButton.CreateButton), and
+     * attaches a MeetingAbilityBehaviour component to it - not this
+     * class. RoleJotButton itself is a plain C# class, never a
+     * Component, so GetComponent<RoleJotButton>() can never match
+     * anything. Identify "is this the Jot button" by that stable
+     * GameObject name instead.
+     */
+    private static readonly string JotButtonGameObjectName = new RoleJotButton().Name + "Button";
+
     [RegisterEvent]
     public static void OnMeetingSelect(MeetingSelectEvent @event)
     {
@@ -29,10 +39,7 @@ public sealed class RoleJotButton : TargetedMeetingButton
             ?.GetValue(MeetingHud.Instance) as Component;
         submitButton?.gameObject.SetActive(false);
 
-        var playerVoteArea = MeetingHud.Instance?.playerStates
-            .FirstOrDefault(p => p != null && p.PlayerId.Value == @event.TargetId);
-
-        if (playerVoteArea != null) HideConfirmButton(playerVoteArea);
+        HideNonJotButtons();
     }
 
     [RegisterEvent]
@@ -41,12 +48,32 @@ public sealed class RoleJotButton : TargetedMeetingButton
         if (@event.VoteData.VotesRemaining <= 0) @event.Cancel();
     }
 
+    /*
+     * Once votes are spent, only Jot should still be usable -
+     * everywhere, not just on whichever row was last clicked. Every
+     * targeted ability button (Jot, TOU's Prosecute, etc.) gets
+     * parented under every player's playerVoteArea.Buttons by
+     * MiraAPI's MeetingButtonManager, so we sweep every row (plus
+     * the Skip button, which uses the same PlayerVoteArea UI).
+     */
+    private static void HideNonJotButtons()
+    {
+        if (MeetingHud.Instance == null) return;
+
+        foreach (var playerVoteArea in MeetingHud.Instance.playerStates)
+        {
+            if (playerVoteArea != null) HideConfirmButton(playerVoteArea);
+        }
+
+        if (MeetingHud.Instance.SkipVoteButton != null) HideConfirmButton(MeetingHud.Instance.SkipVoteButton);
+    }
+
     private static void HideConfirmButton(PlayerVoteArea playerVoteArea)
     {
         foreach (var button in playerVoteArea.Buttons.GetComponentsInChildren<PassiveButton>(true))
         {
             if (button == playerVoteArea.CancelButton) continue;
-            if (button.GetComponent<MeetingAbilityBehaviour>() != null) continue;
+            if (button.gameObject.name == JotButtonGameObjectName) continue;
 
             button.gameObject.SetActive(false);
         }
@@ -85,11 +112,6 @@ public sealed class RoleJotButton : TargetedMeetingButton
 
         var targetId = playerVoteArea.PlayerId.Value;
 
-        /*
-         * Clicking Jot on a player who's already jotted removes
-         * the label and restores their panel, instead of opening
-         * the picker again to overwrite it.
-         */
         if (JotedRoleLabels.TryGetLabel(targetId, out _))
         {
             JottedLabelPatch.RemoveJotedLabel(targetId);

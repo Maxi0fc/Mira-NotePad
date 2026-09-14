@@ -1,6 +1,6 @@
-# Mira-NotePad
+<img width="2172" height="381" alt="ChatGPT Image Sep 13, 2026, 07_55_46 PM" src="https://github.com/user-attachments/assets/142281aa-96c1-4eef-b7e9-054276e38959" />
 
-An in-game notepad for [MiraAPI](https://github.com/All-Of-Us-Mods/MiraAPI) and its Mods, with support for more heavy integration with other MiraAPI mods.
+An in-game notepad for [MiraAPI](https://github.com/All-Of-Us-Mods/MiraAPI) and its Mods, with support for more heavy integration with other MiraAPI mods.  ![GitHub Downloads (all assets, all releases)](https://img.shields.io/github/downloads/Maxi0fc/Mira-Notepad/total)
 
 Toggle a notepad window from the HUD and jot stuff down mid-game. On its own it's just a clean little text box that colors role and modifier names as you type them. Install a supported mod alongside it and it does more, like auto-logging ability feedback or letting you tag guessed roles onto players.
 
