@@ -22,11 +22,11 @@ public static class RoleInfoPatch
 
         RegisterTitle(TouIntegration.GetTouLocaleParsed("TouRoleLookoutFeedbackTitle", "Lookout Feedback"));
         RegisterTitle("Cleric Feedback");
-        RegisterTitle(TouIntegration.GetTouLocale("TouRoleForensicMessageTitle", "Forensic Report"));
+        RegisterTitle(TouIntegration.GetTouLocaleParsed("TouRoleForensicMessageTitle", "Forensic Report"));
         RegisterTitle(TouIntegration.GetTouLocaleParsed("TouRoleOracleConfessionTitle", "Oracle Confession"));
-        RegisterTitle(TouIntegration.GetTouLocale("TouRoleDoomsayerMessageTitle", "Doomsayer Feedback"));
-        RegisterTitle(TouIntegration.GetTouLocale("TouRoleTrapperMessageTitle", "Trapper Feedback"));
-        RegisterTitle(TouIntegration.GetTouLocale("TouRoleInquisitorMessageTitle", "Inquisitor Feedback"));
+        RegisterTitle(TouIntegration.GetTouLocaleParsed("TouRoleDoomsayerMessageTitle", "Doomsayer Feedback"));
+        RegisterTitle(TouIntegration.GetTouLocaleParsed("TouRoleTrapperMessageTitle", "Trapper Feedback"));
+        RegisterTitle(TouIntegration.GetTouLocaleParsed("TouRoleInquisitorMessageTitle", "Inquisitor Feedback"));
 
         RegisterEmptyResultText(TouIntegration.GetTouLocaleParsed("TouRoleOracleConfessorDied", "The confessor died before confessing."));
         RegisterEmptyResultText(TouIntegration.GetTouLocaleParsed("TouRoleOracleTooFew", "There were too few players to confess."));

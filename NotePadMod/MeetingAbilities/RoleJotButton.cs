@@ -45,7 +45,13 @@ public sealed class RoleJotButton : TargetedMeetingButton
     [RegisterEvent]
     public static void OnHandleVote(HandleVoteEvent @event)
     {
-        if (@event.VoteData.VotesRemaining <= 0) @event.Cancel();
+        if (@event.VoteData.VotesRemaining > 0) return;
+
+        var targetInfo = @event.TargetPlayerInfo;
+        if (targetInfo != null && targetInfo.IsDead)
+            return;
+
+        @event.Cancel();
     }
 
     /*
