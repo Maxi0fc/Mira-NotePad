@@ -45,7 +45,11 @@ public static class JottedLabelPatch
                 if (!JotedRoleLabels.TryGetLabel(playerVA.PlayerId.Value, out var label))
                     continue;
 
-                playerVA.NameText.text = $"{playerVA.NameText.text}\n{label}";
+                var suffix = $"\n{label}";
+                if (playerVA.NameText.text.EndsWith(suffix))
+                    continue;
+
+                playerVA.NameText.text += suffix;
                 playerVA.NameText.ForceMeshUpdate();
             }
         }
