@@ -5,7 +5,7 @@
     <Nullable>enable</Nullable>
     <LangVersion>latest</LangVersion>
     <Platforms>AnyCPU</Platforms>
-    <Version>1.4.3</Version>
+    <Version>1.4.4</Version>
     <NoWarn>$(NoWarn);CS0436;CS0618</NoWarn>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <GamePlatform Condition="'$(GamePlatform)' == ''">Steam</GamePlatform>
@@ -37,6 +37,5 @@
     <EmbeddedResource Include="Resources\notepad-mod-android.bundle" Condition="Exists('Resources\notepad-mod-android.bundle')" />
     <EmbeddedResource Include="modinfo.json" />
   </ItemGroup>
-
 
 </Project>
