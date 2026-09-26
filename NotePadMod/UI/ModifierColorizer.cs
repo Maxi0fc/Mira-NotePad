@@ -14,9 +14,12 @@ namespace NotePadMod.UI;
 public static class ModifierColorizer
 {
     private static readonly ManualLogSource Log = BepInEx.Logging.Logger.CreateLogSource("ModifierColorizer");
+    private static readonly Regex TagRegex = new(@"<[^>]+>", RegexOptions.Compiled);
     private static Dictionary<string, string>? _modifierColors;
     private static Dictionary<string, string>? _modifierIcons;
     private static Regex? _modifierRegex;
+
+    private static string StripTags(string text) => string.IsNullOrEmpty(text) ? text : TagRegex.Replace(text, "").Trim();
 
     public static void Refresh()
     {
@@ -131,7 +134,7 @@ public static class ModifierColorizer
             try
             {
                 var val = prop.GetValue(instance) as string;
-                if (!string.IsNullOrWhiteSpace(val)) return val.Trim();
+                if (!string.IsNullOrWhiteSpace(val)) return StripTags(val.Trim());
             }
             catch { }
         }
@@ -171,19 +174,49 @@ public static class ModifierColorizer
             return;
         }
 
-        var names = new List<string>(_modifierColors.Keys);
-        names.Sort((a, b) => b.Length.CompareTo(a.Length));
+        var names = _modifierColors.Keys
+            .Where(name => !string.IsNullOrWhiteSpace(name))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderByDescending(name => name.Length)
+            .ToList();
 
-        var sb = new StringBuilder(@"(?i)\b(");
-        for (int i = 0; i < names.Count; i++)
+        if (names.Count == 0)
         {
-            if (i > 0) sb.Append('|');
-            sb.Append(Regex.Escape(names[i]));
+            _modifierRegex = null;
+            return;
         }
-        sb.Append(@")\b");
 
-        _modifierRegex = new Regex(sb.ToString(), RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        var pattern = "(?i)(?<![A-Za-z0-9])(?:" + string.Join("|", names.Select(Regex.Escape)) + ")(?![A-Za-z0-9])";
+        _modifierRegex = new Regex(pattern, RegexOptions.Compiled);
         Log.LogInfo($"[ModifierColorizer] Regex built with {names.Count} modifier names");
+    }
+
+    private static string ApplyPattern(string raw, MatchEvaluator replacer)
+    {
+        if (string.IsNullOrEmpty(raw) || _modifierRegex == null)
+            return raw;
+
+        var result = new StringBuilder(raw.Length);
+        int lastIndex = 0;
+
+        foreach (Match tagMatch in TagRegex.Matches(raw))
+        {
+            if (tagMatch.Index > lastIndex)
+            {
+                string plain = raw.Substring(lastIndex, tagMatch.Index - lastIndex);
+                result.Append(_modifierRegex.Replace(plain, replacer));
+            }
+
+            result.Append(tagMatch.Value);
+            lastIndex = tagMatch.Index + tagMatch.Length;
+        }
+
+        if (lastIndex < raw.Length)
+        {
+            result.Append(_modifierRegex.Replace(raw.Substring(lastIndex), replacer));
+        }
+
+        return result.ToString();
     }
 
     public static string Apply(string raw)
@@ -196,7 +229,10 @@ public static class ModifierColorizer
         if (_modifierColors == null || _modifierRegex == null || raw.Length == 0)
             return raw;
 
-        return _modifierRegex.Replace(raw, m =>
+        if (raw.Contains("<color=", StringComparison.OrdinalIgnoreCase))
+            return raw;
+
+        return ApplyPattern(raw, m =>
         {
             string key = m.Value.ToLowerInvariant();
             if (_modifierColors.TryGetValue(key, out string? hex))

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using AmongUs.GameOptions;
@@ -12,9 +13,12 @@ namespace NotePadMod.UI;
 public static class RoleColorizer
 {
     private static readonly ManualLogSource Log = BepInEx.Logging.Logger.CreateLogSource("RoleColorizer");
+    private static readonly Regex TagRegex = new(@"<[^>]+>", RegexOptions.Compiled);
     private static Dictionary<string, string>? _roleColors;
     private static Dictionary<string, string>? _roleIcons;
     private static Regex? _roleRegex;
+
+    private static string StripTags(string text) => string.IsNullOrEmpty(text) ? text : TagRegex.Replace(text, "").Trim();
 
     public static void Refresh()
     {
@@ -29,7 +33,7 @@ public static class RoleColorizer
             {
                 if (customRole == null) continue;
 
-                string name = customRole.RoleName?.Trim() ?? "";
+                string name = StripTags(customRole.RoleName?.Trim() ?? "");
                 if (name.Length == 0) continue;
 
                 string hex = ColorUtility.ToHtmlStringRGB(customRole.RoleColor);
@@ -57,12 +61,12 @@ public static class RoleColorizer
 
                     if (role is ICustomRole cr)
                     {
-                        name = cr.RoleName?.Trim() ?? "";
+                        name = StripTags(cr.RoleName?.Trim() ?? "");
                         color = cr.RoleColor;
                     }
                     else
                     {
-                        name = TranslationController.Instance?.GetString(role.StringName)?.Trim() ?? role.Role.ToString();
+                        name = StripTags(TranslationController.Instance?.GetString(role.StringName)?.Trim() ?? role.Role.ToString());
                         color = role.TeamType == RoleTeamTypes.Impostor ? Palette.ImpostorRed : Palette.CrewmateBlue;
                     }
 
@@ -118,19 +122,49 @@ public static class RoleColorizer
             return;
         }
 
-        var names = new List<string>(_roleColors.Keys);
-        names.Sort((a, b) => b.Length.CompareTo(a.Length));
+        var names = _roleColors.Keys
+            .Where(name => !string.IsNullOrWhiteSpace(name))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderByDescending(name => name.Length)
+            .ToList();
 
-        var sb = new StringBuilder(@"(?i)\b(");
-        for (int i = 0; i < names.Count; i++)
+        if (names.Count == 0)
         {
-            if (i > 0) sb.Append('|');
-            sb.Append(Regex.Escape(names[i]));
+            _roleRegex = null;
+            return;
         }
-        sb.Append(@")\b");
 
-        _roleRegex = new Regex(sb.ToString(), RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        var pattern = "(?i)(?<![A-Za-z0-9])(?:" + string.Join("|", names.Select(Regex.Escape)) + ")(?![A-Za-z0-9])";
+        _roleRegex = new Regex(pattern, RegexOptions.Compiled);
         Log.LogInfo($"[RoleColorizer] Regex built with {names.Count} role names");
+    }
+
+    private static string ApplyPattern(string raw, MatchEvaluator replacer)
+    {
+        if (string.IsNullOrEmpty(raw) || _roleRegex == null)
+            return raw;
+
+        var result = new StringBuilder(raw.Length);
+        int lastIndex = 0;
+
+        foreach (Match tagMatch in TagRegex.Matches(raw))
+        {
+            if (tagMatch.Index > lastIndex)
+            {
+                string plain = raw.Substring(lastIndex, tagMatch.Index - lastIndex);
+                result.Append(_roleRegex.Replace(plain, replacer));
+            }
+
+            result.Append(tagMatch.Value);
+            lastIndex = tagMatch.Index + tagMatch.Length;
+        }
+
+        if (lastIndex < raw.Length)
+        {
+            result.Append(_roleRegex.Replace(raw.Substring(lastIndex), replacer));
+        }
+
+        return result.ToString();
     }
 
     public static string Apply(string raw)
@@ -143,7 +177,10 @@ public static class RoleColorizer
         if (_roleColors == null || _roleRegex == null || raw.Length == 0)
             return raw;
 
-        return _roleRegex.Replace(raw, m =>
+        if (raw.Contains("<color=", StringComparison.OrdinalIgnoreCase))
+            return raw;
+
+        return ApplyPattern(raw, m =>
         {
             string key = m.Value.ToLowerInvariant();
             if (_roleColors.TryGetValue(key, out string? hex))
