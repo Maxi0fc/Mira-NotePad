@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
+using BepInEx.Logging;
 using NotePadMod.Compatibility;
 using NotePadMod.UI;
 
@@ -9,9 +10,10 @@ namespace NotePadMod.Patches;
 
 public static class RoleInfoPatch
 {
+    private static readonly ManualLogSource Log = BepInEx.Logging.Logger.CreateLogSource("RoleInfoPatch");
     private static readonly Regex ColorTagRegex = new(@"<color=#?[0-9A-Fa-f]+>(.*?)</color>", RegexOptions.Compiled);
-    private static readonly HashSet<string> IncludedTitles = new();
-    private static readonly HashSet<string> EmptyResultTexts = new();
+    private static readonly HashSet<string> IncludedTitles = new(StringComparer.OrdinalIgnoreCase);
+    private static readonly HashSet<string> EmptyResultTexts = new(StringComparer.OrdinalIgnoreCase);
     private static readonly List<Regex> EmptyResultTemplates = new();
     private static bool _initialized;
 
@@ -20,29 +22,53 @@ public static class RoleInfoPatch
         if (_initialized) return;
         _initialized = true;
 
-        RegisterTitle(TouIntegration.GetTouLocaleParsed("TouRoleLookoutFeedbackTitle", "Lookout Feedback"));
+        RegisterTitle(TouIntegration.GetTouLocaleParsed("TownOfUsMira.Role.LookoutFeedbackTitle", "Lookout Feedback"));
         RegisterTitle("Cleric Feedback");
-        RegisterTitle(TouIntegration.GetTouLocaleParsed("TouRoleForensicMessageTitle", "Forensic Report"));
-        RegisterTitle(TouIntegration.GetTouLocaleParsed("TouRoleOracleConfessionTitle", "Oracle Confession"));
-        RegisterTitle(TouIntegration.GetTouLocaleParsed("TouRoleDoomsayerMessageTitle", "Doomsayer Feedback"));
-        RegisterTitle(TouIntegration.GetTouLocaleParsed("TouRoleTrapperMessageTitle", "Trapper Feedback"));
-        RegisterTitle(TouIntegration.GetTouLocaleParsed("TouRoleInquisitorMessageTitle", "Inquisitor Feedback"));
+        RegisterTitle(TouIntegration.GetTouLocaleParsed("TownOfUsMira.Role.ForensicMessageTitle", "Forensic Report"));
+        RegisterTitle(TouIntegration.GetTouLocaleParsed("TownOfUsMira.Role.OracleConfessionTitle", "Oracle Confession"));
+        RegisterTitle(TouIntegration.GetTouLocaleParsed("TownOfUsMira.Role.DoomsayerMessageTitle", "Doomsayer Report"));
+        RegisterTitle(TouIntegration.GetTouLocaleParsed("TownOfUsMira.Role.TrapperMessageTitle", "Trapper Report"));
+        RegisterTitle(TouIntegration.GetTouLocaleParsed("TownOfUsMira.Role.InquisitorMessageTitle", "Inquisitor Report"));
 
-        RegisterEmptyResultText(TouIntegration.GetTouLocaleParsed("TouRoleOracleConfessorDied", "The confessor died before confessing."));
-        RegisterEmptyResultText(TouIntegration.GetTouLocaleParsed("TouRoleOracleTooFew", "There were too few players to confess."));
-        RegisterEmptyResultText(TouIntegration.GetTouLocaleParsed("TouRoleOracleNoMoreEvil", "There are no more evil players to confess."));
-        RegisterEmptyResultText(TouIntegration.GetTouLocaleParsed("TouRoleTrapperNoPlayers", "No players triggered your trap."));
-        RegisterEmptyResultText(TouIntegration.GetTouLocaleParsed("TouRoleTrapperNotEnoughPLayers", "Not enough players triggered your trap."));
+        RegisterTitle("Doomsayer Feedback");
+        RegisterTitle("Trapper Feedback");
+        RegisterTitle("Inquisitor Feedback");
 
-        RegisterEmptyResultTemplate(TouIntegration.GetTouLocaleParsed("TouRoleInquisitorInquiredNonHeretic", "<player> is not a Heretic."));
-        RegisterEmptyResultTemplate(TouIntegration.GetTouLocaleParsed("TouRoleLookoutNoInteractionFeedback", "Nobody visited <player>."));
+        RegisterEmptyResultText(TouIntegration.GetTouLocaleParsed(
+            "TownOfUsMira.Role.OracleConfessorDied",
+            "Your confessor failed to survive so you received no confession"));
+        RegisterEmptyResultText(TouIntegration.GetTouLocaleParsed(
+            "TownOfUsMira.Role.OracleTooFew",
+            "Too few people alive to receive a confessional"));
+        RegisterEmptyResultTemplate(TouIntegration.GetTouLocaleParsed(
+            "TownOfUsMira.Role.OracleNoMoreEvil",
+            "[player] confesses to knowing that there are no more evil players!"),
+            "[player]");
+        RegisterEmptyResultText(TouIntegration.GetTouLocaleParsed(
+            "TownOfUsMira.Role.TrapperNoPlayers",
+            "No players entered any of your traps"));
+        RegisterEmptyResultText(TouIntegration.GetTouLocaleParsed(
+            "TownOfUsMira.Role.TrapperNotEnoughPLayers",
+            "Not enough players triggered your traps"));
+
+        RegisterEmptyResultTemplate(TouIntegration.GetTouLocaleParsed(
+            "TownOfUsMira.Role.InquisitorInquiredNonHeretic",
+            "Your inquiry reveals that [player] is not a heretic!"),
+            "[player]");
+        RegisterEmptyResultTemplate(TouIntegration.GetTouLocaleParsed(
+            "TownOfUsMira.Role.LookoutNoInteractionFeedback",
+            "No players interacted with [player]"),
+            "[player]");
         RegisterEmptyResultTemplate("No negative effects were found on <player>.");
     }
 
     public static void RegisterTitle(string title)
     {
-        if (string.IsNullOrEmpty(title)) return;
-        IncludedTitles.Add(title);
+        var normalizedTitle = NormalizeTitle(title);
+        if (normalizedTitle.Length > 0)
+        {
+            IncludedTitles.Add(normalizedTitle);
+        }
     }
 
     public static void RegisterTitles(IEnumerable<string> titles)
@@ -86,14 +112,21 @@ public static class RoleInfoPatch
         return match.Success ? match.Groups[1].Value : text;
     }
 
-    public static void RecordPatch(string title, string message)
+    public static void RecordPatch(object[] __args)
     {
-        message = message.Replace("#", "");
-        message = message.Replace("-", " ");
+        if (__args.Length < 3 ||
+            __args[1] is not string title ||
+            __args[2] is not string message)
+        {
+            Log.LogWarning(
+                $"Ignored FakeChatHistory.Record with unexpected arguments ({__args.Length} arguments).");
+            return;
+        }
+
         if (TouIntegration.IsFakeChatHistoryReplaying()) return;
         if (!NotePadPlugin.Settings.AutoAddRoleInfo.Value) return;
 
-        var plainTitle = StripColorTag(title);
+        var plainTitle = NormalizeTitle(title);
         if (!IncludedTitles.Contains(plainTitle)) return;
 
         var plainMessage = StripColorTag(message);
@@ -102,5 +135,12 @@ public static class RoleInfoPatch
         if (EmptyResultTemplates.Any(template => template.IsMatch(plainMessage))) return;
 
         NotePadWindow.AppendRoleInfoText($"<b>{title}</b>", message);
+        Log.LogInfo($"Added whitelisted role info to Notepad: {plainTitle}.");
+    }
+
+    private static string NormalizeTitle(string title)
+    {
+        var plainTitle = StripColorTag(title).Trim();
+        return plainTitle.TrimEnd(':').Trim();
     }
 }
