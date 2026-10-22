@@ -26,7 +26,7 @@ public sealed class RoleJotButton : TargetedMeetingButton
      * anything. Identify "is this the Jot button" by that stable
      * GameObject name instead.
      */
-    private static readonly string JotButtonGameObjectName = new RoleJotButton().Name + "Button";
+    internal static readonly string JotButtonGameObjectName = new RoleJotButton().Name + "Button";
 
     [RegisterEvent]
     public static void OnMeetingSelect(MeetingSelectEvent @event)

@@ -44,7 +44,7 @@ public static class TouIntegration
 
             Log.LogInfo("[TouIntegration] Town of Us Mira detected! Initializing soft-dependency features...");
 
-            CacheTouTypes();
+            CacheTouTypes(harmony);
             RoleInfoPatch.InitializeTouStrings();
             ApplyDynamicPatches(harmony);
 
@@ -79,7 +79,7 @@ public static class TouIntegration
         }
     }
 
-    private static void CacheTouTypes()
+    private static void CacheTouTypes(Harmony harmony)
     {
         if (_touAssembly == null)
         {
@@ -107,7 +107,7 @@ public static class TouIntegration
             }
         }
 
-        JottingIntegration.CacheTypes(_touAssembly);
+        JottingIntegration.CacheTypes(_touAssembly, harmony);
 
         _baseRevealModifierType = _touAssembly.GetType("TownOfUs.Modifiers.BaseRevealModifier");
         if (_baseRevealModifierType != null)
