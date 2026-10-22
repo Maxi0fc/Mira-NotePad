@@ -15,11 +15,11 @@ public static class JottingIntegration
     private static MethodInfo? _createMethod;
     private static MethodInfo? _beginMethod;
     private static MethodInfo? _closeMethod;
-    private static readonly List<(GameObject GameObject, bool WasActive)> HiddenPlayerAreas = new();
+    private static readonly List<(Renderer Renderer, bool WasEnabled)> HiddenRenderers = new();
 
     public static bool IsAvailable => _createMethod != null && _beginMethod != null && _closeMethod != null;
 
-    public static void CacheTypes(Assembly touAssembly)
+    public static void CacheTypes(Assembly touAssembly, Harmony harmony)
     {
         var jotMenuType = touAssembly.GetType("TownOfUs.Modules.Components.GuesserMenu");
 
@@ -57,6 +57,9 @@ public static class JottingIntegration
         }
         else
         {
+            harmony.Patch(
+                _closeMethod,
+                postfix: new HarmonyMethod(typeof(JotMenuMeetingVisibilityPatch).GetMethod(nameof(JotMenuMeetingVisibilityPatch.Postfix))!));
             Log.LogInfo("JotMenu.Create/Begin/Close successfully hooked.");
         }
     }
@@ -105,6 +108,7 @@ public static class JottingIntegration
             }
             finally
             {
+                RestoreMeetingPlayerAreas();
                 CloseMenu(menuObj);
             }
         }
@@ -131,21 +135,27 @@ public static class JottingIntegration
         foreach (var playerVoteArea in MeetingHud.Instance.playerStates)
         {
             if (playerVoteArea == null) continue;
+            if (playerVoteArea.Buttons == null) continue;
 
-            var playerArea = playerVoteArea.gameObject;
-            HiddenPlayerAreas.Add((playerArea, playerArea.activeSelf));
-            playerArea.SetActive(false);
+            var buttonsTransform = playerVoteArea.Buttons.transform;
+
+            foreach (var renderer in playerVoteArea.GetComponentsInChildren<Renderer>(true))
+            {
+                if (renderer.transform.IsChildOf(buttonsTransform)) continue;
+
+                HiddenRenderers.Add((renderer, renderer.enabled));
+                renderer.enabled = false;
+            }
         }
     }
 
     internal static void RestoreMeetingPlayerAreas()
     {
-        foreach (var (gameObject, wasActive) in HiddenPlayerAreas)
+        foreach (var (renderer, wasEnabled) in HiddenRenderers)
         {
-            if (gameObject != null) gameObject.SetActive(wasActive);
+            if (renderer != null) renderer.enabled = wasEnabled;
         }
-
-        HiddenPlayerAreas.Clear();
+        HiddenRenderers.Clear();
     }
 
     private static void CloseMenu(object menuObj)
@@ -161,7 +171,6 @@ public static class JottingIntegration
     }
 }
 
-[HarmonyPatch(typeof(Minigame), nameof(Minigame.Close))]
 public static class JotMenuMeetingVisibilityPatch
 {
     [HarmonyPostfix]
