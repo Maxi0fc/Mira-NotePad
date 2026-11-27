@@ -93,8 +93,18 @@ public static class TouIntegration
         _touLocaleType = _touAssembly.GetType("TownOfUs.Modules.Localization.TouLocale");
         if (_touLocaleType != null)
         {
-            _getParsedMethod = _touLocaleType.GetMethod("GetParsed", BindingFlags.Public | BindingFlags.Static, null, new[] { typeof(string) }, null);
-            _getMethod = _touLocaleType.GetMethod("Get", BindingFlags.Public | BindingFlags.Static, null, new[] { typeof(string) }, null);
+            _getParsedMethod = _touLocaleType.GetMethod(
+                "GetParsed",
+                BindingFlags.Public | BindingFlags.Static,
+                null,
+                new[] { typeof(string), typeof(string), typeof(Dictionary<string, string>) },
+                null);
+            _getMethod = _touLocaleType.GetMethod(
+                "Get",
+                BindingFlags.Public | BindingFlags.Static,
+                null,
+                new[] { typeof(string), typeof(string) },
+                null);
         }
 
         var miscUtilsType = _touAssembly.GetType("TownOfUs.Utilities.MiscUtils");
@@ -107,7 +117,7 @@ public static class TouIntegration
             }
         }
 
-        JottingIntegration.CacheTypes(_touAssembly, harmony);
+        JottingIntegration.CacheTypes(_touAssembly);
 
         _baseRevealModifierType = _touAssembly.GetType("TownOfUs.Modifiers.BaseRevealModifier");
         if (_baseRevealModifierType != null)
@@ -192,7 +202,7 @@ public static class TouIntegration
         {
             try
             {
-                var res = (string?)_getParsedMethod.Invoke(null, new object[] { key });
+                var res = (string?)_getParsedMethod.Invoke(null, new object?[] { key, fallback, null });
                 if (!string.IsNullOrEmpty(res)) return res;
             }
             catch { }
@@ -206,7 +216,7 @@ public static class TouIntegration
         {
             try
             {
-                var res = (string?)_getMethod.Invoke(null, new object[] { key });
+                var res = (string?)_getMethod.Invoke(null, new object?[] { key, fallback });
                 if (!string.IsNullOrEmpty(res)) return res;
             }
             catch { }

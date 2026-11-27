@@ -24,7 +24,7 @@ public static class RoleInfoPatch
 
         RegisterTitle(TouIntegration.GetTouLocaleParsed("TownOfUsMira.Role.LookoutFeedbackTitle", "Lookout Feedback"));
         RegisterTitle("Cleric Feedback");
-        RegisterTitle(TouIntegration.GetTouLocaleParsed("TownOfUsMira.Role.ForensicMessageTitle", "Forensic Report"));
+        RegisterTitle(TouIntegration.GetTouLocaleParsed("TownOfUsMira.Role.ForensicMessageTitle", "Forensic Body Report"));
         RegisterTitle(TouIntegration.GetTouLocaleParsed("TownOfUsMira.Role.OracleConfessionTitle", "Oracle Confession"));
         RegisterTitle(TouIntegration.GetTouLocaleParsed("TownOfUsMira.Role.DoomsayerMessageTitle", "Doomsayer Report"));
         RegisterTitle(TouIntegration.GetTouLocaleParsed("TownOfUsMira.Role.TrapperMessageTitle", "Trapper Report"));
@@ -134,7 +134,7 @@ public static class RoleInfoPatch
         if (EmptyResultTexts.Contains(plainMessage)) return;
         if (EmptyResultTemplates.Any(template => template.IsMatch(plainMessage))) return;
 
-        NotePadWindow.AppendRoleInfoText($"<b>{title}</b>", message);
+        NotePadWindow.AppendRoleInfoEntry(message);
         Log.LogInfo($"Added whitelisted role info to Notepad: {plainTitle}.");
     }
 
