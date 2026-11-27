@@ -6,6 +6,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using BepInEx.Logging;
 using MiraAPI.Modifiers;
+using MiraAPI.Modifiers.Types;
 using NotePadMod.Compatibility;
 using UnityEngine;
 
@@ -35,6 +36,7 @@ public static class ModifierColorizer
                 foreach (var mod in ModifierManager.Modifiers)
                 {
                     if (mod == null) continue;
+                    if (mod is GameModifier gameModifier && !gameModifier.CanSpawnOnCurrentMode()) continue;
 
                     string name = GetModifierName(mod);
                     if (string.IsNullOrEmpty(name)) continue;
@@ -95,6 +97,7 @@ public static class ModifierColorizer
                     }
 
                     if (instance == null) continue;
+                    if (instance is GameModifier gameModifier && !gameModifier.CanSpawnOnCurrentMode()) continue;
 
                     string name = GetModifierName(instance);
                     if (string.IsNullOrEmpty(name)) continue;

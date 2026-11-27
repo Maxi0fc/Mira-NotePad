@@ -32,6 +32,7 @@ public static class RoleColorizer
             foreach (var customRole in CustomRoleManager.CustomMiraRoles)
             {
                 if (customRole == null) continue;
+                if (!customRole.CanSpawnOnCurrentMode()) continue;
 
                 string name = StripTags(customRole.RoleName?.Trim() ?? "");
                 if (name.Length == 0) continue;
@@ -55,6 +56,7 @@ public static class RoleColorizer
                 foreach (var role in RoleManager.Instance.AllRoles)
                 {
                     if (role == null) continue;
+                    if (!CustomRoleUtils.CanSpawnOnCurrentMode(role)) continue;
 
                     string name;
                     Color color;
