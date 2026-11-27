@@ -44,6 +44,7 @@ public class NotePadWindow(nint ptr) : Minigame(ptr)
     private bool   _cursorVisible = true;
     private TouchScreenKeyboard? _touchKeyboard;
     private TextMeshPro? _displayTmp;
+    private TextMeshPro? _titleTmp;
     private int _firstVisibleLine;
     private float _scrollRemainder;
     private float _backspaceHeld = 0f;
@@ -66,6 +67,11 @@ public class NotePadWindow(nint ptr) : Minigame(ptr)
     private const float TextTopOffset = 0.26f;
     private const float LinePitch     = 1.87f;
     private const float OutlineWidth  = 0.2f;
+    private const float SideButtonScale = 0.55f;
+    private const float SideButtonLabelFontSize = 1.55f;
+    private const float SideButtonLabelYOffset = -0.27f;
+    private static readonly Color GeneralTabLabelColor = new Color32(83, 129, 99, 255);
+    private static readonly Color RoleInfoTabLabelColor = new Color32(80, 125, 130, 255);
     private static readonly Color OutlineColor = Color.black;
 
     private static Color GetTextColor()
@@ -182,12 +188,12 @@ public class NotePadWindow(nint ptr) : Minigame(ptr)
         _instance.AppendToTab(NoteTab.RoleInfo, text);
     }
 
-    public static void AppendRoleInfoText(string title, string message)
+    public static void AppendRoleInfoEntry(string message)
     {
         EnsureInstance();
         if (_instance == null) return;
 
-        _instance.AppendRoleInfoEntry(title, message);
+        _instance.AddRoleInfoEntry(message);
     }
 
     public static void CloseWindow()
@@ -238,10 +244,10 @@ public class NotePadWindow(nint ptr) : Minigame(ptr)
         UpdateDisplay();
     }
 
-    private void AppendRoleInfoEntry(string title, string message)
+    private void AddRoleInfoEntry(string message)
     {
         SaveActiveTab();
-        string snippet = $"{title}\n{message}\n\n";
+        string snippet = $"{message}\n\n";
         _roleInfoEntries.Add(new RoleInfoEntry { Snippet = snippet });
         _roleInfoContent += (_roleInfoContent.Length > 0 ? "\n" : "") + snippet;
         _roleInfoCursorPos = _roleInfoContent.Length;
@@ -685,7 +691,12 @@ public class NotePadWindow(nint ptr) : Minigame(ptr)
     {
         bool roleInfoActive = _activeTab == NoteTab.RoleInfo;
         SetTabButtonSprite(roleInfoActive);
-        SetButtonLabel(_tabButton, roleInfoActive ? "ROLE INFO" : "GENERAL");
+        SetButtonLabel(
+            _tabButton,
+            "SWITCH",
+            roleInfoActive ? RoleInfoTabLabelColor : GeneralTabLabelColor);
+        if (_titleTmp != null)
+            _titleTmp.text = roleInfoActive ? "Role Info" : "General Notes";
         if (_linesObject != null)
             _linesObject.SetActive(!roleInfoActive);
         if (_backgroundRenderer != null)
@@ -722,13 +733,16 @@ public class NotePadWindow(nint ptr) : Minigame(ptr)
             renderer.sprite = sprite;
     }
 
-    private static void SetButtonLabel(GameObject? button, string label)
+    private static void SetButtonLabel(GameObject? button, string label, Color color)
     {
         if (button == null) return;
         var labelObject = button.transform.Find("TabButtonLabel");
         var labelTmp = labelObject?.GetComponent<TextMeshPro>();
         if (labelTmp != null)
+        {
             labelTmp.text = label;
+            labelTmp.color = color;
+        }
     }
 
     private GameObject? CreateSideButton(
@@ -741,36 +755,56 @@ public class NotePadWindow(nint ptr) : Minigame(ptr)
         var button = Object.Instantiate(template.gameObject, _panelInstance!.transform);
         button.name = name;
         button.transform.localPosition = localPosition;
-        button.transform.localScale = Vector3.one * 0.55f;
+        button.transform.localScale = Vector3.one * SideButtonScale;
 
         var passiveButton = button.GetComponent<PassiveButton>();
         if (passiveButton == null) return button;
         passiveButton.OnClick = new Button.ButtonClickedEvent();
         passiveButton.OnClick.AddListener(action);
         if (name == "TabButton")
-            SetTabButtonSprite(false);
+            SetTabButtonSprite(_activeTab == NoteTab.RoleInfo);
         else
             SetButtonSprite(button, false);
         SetSortingOrderRecursively(button.transform, PanelSortingOrder + 3);
 
-        if (_displayTmp != null)
+        var labelObject = new GameObject("TabButtonLabel");
+        labelObject.transform.SetParent(button.transform, false);
+        float buttonScale = button.transform.localScale.x;
+        float inverseButtonScale = buttonScale != 0f ? 1f / buttonScale : 1f;
+        labelObject.transform.localScale = new Vector3(inverseButtonScale, inverseButtonScale, 1f);
+        labelObject.transform.localPosition =
+            new Vector3(0f, SideButtonLabelYOffset * inverseButtonScale, -0.1f);
+        labelObject.layer = button.layer;
+
+        var labelTmp = labelObject.AddComponent<TextMeshPro>();
+        labelTmp.text = label;
+        labelTmp.fontSize = SideButtonLabelFontSize;
+        labelTmp.fontSizeMin = SideButtonLabelFontSize;
+        labelTmp.fontSizeMax = SideButtonLabelFontSize;
+        labelTmp.alignment = TextAlignmentOptions.Center;
+        labelTmp.enableWordWrapping = false;
+        labelTmp.overflowMode = TextOverflowModes.Overflow;
+        labelTmp.characterSpacing = 2f;
+        labelTmp.color = Color.black;
+
+        var vanillaButtonFont = HudManager.Instance?.KillButton?.buttonLabelText?.font;
+        if (vanillaButtonFont != null)
+            labelTmp.font = vanillaButtonFont;
+
+        var labelMaterial = Object.Instantiate(labelTmp.fontMaterial);
+        labelMaterial.EnableKeyword("OUTLINE_ON");
+        labelMaterial.SetColor(ShaderUtilities.ID_OutlineColor, Color.white);
+        labelMaterial.SetFloat(ShaderUtilities.ID_OutlineWidth, 0.15f);
+        labelMaterial.SetFloat(ShaderUtilities.ID_FaceDilate, 0.20f);
+        labelTmp.fontMaterial = labelMaterial;
+
+        var buttonRenderer = button.GetComponentInChildren<SpriteRenderer>();
+        if (buttonRenderer != null)
         {
-            var labelObject = Object.Instantiate(_displayTmp.gameObject, button.transform);
-            labelObject.name = "TabButtonLabel";
-            labelObject.transform.localPosition = new Vector3(0f, 0f, -0.2f);
-            labelObject.transform.localScale = Vector3.one * 0.16f;
-            var labelTmp = labelObject.GetComponent<TextMeshPro>();
-            if (labelTmp != null)
-            {
-                labelTmp.text = label;
-                labelTmp.color = Color.black;
-                labelTmp.alignment = TextAlignmentOptions.Center;
-                labelTmp.enableWordWrapping = false;
-                labelTmp.overflowMode = TextOverflowModes.Overflow;
-                labelTmp.sortingOrder = PanelSortingOrder + 4;
-                ApplyOutline(labelTmp);
-            }
+            labelTmp.sortingLayerID = buttonRenderer.sortingLayerID;
         }
+        labelTmp.sortingOrder = PanelSortingOrder + 4;
+        labelTmp.rectTransform.sizeDelta = new Vector2(1.8f, 0.45f);
 
         return button;
     }
@@ -791,10 +825,9 @@ public class NotePadWindow(nint ptr) : Minigame(ptr)
             template,
             "TabButton",
             new Vector3(buttonX, topY, -0.2f),
-            "ROLE",
+            "SWITCH",
             (UnityAction)(() => SwitchTab(
                 _activeTab == NoteTab.General ? NoteTab.RoleInfo : NoteTab.General)));
-        SetTabButtonSprite(_activeTab == NoteTab.RoleInfo);
 
         CreateRoleInfoLineOverlay(bounds);
         UpdateTabVisuals();
@@ -950,6 +983,10 @@ public class NotePadWindow(nint ptr) : Minigame(ptr)
         _backgroundRenderer = backgroundT != null ? backgroundT.GetComponent<SpriteRenderer>() : null;
         if (_backgroundRenderer != null)
             _generalBackgroundColor = _backgroundRenderer.color;
+        var titleT = _panelInstance.transform.Find("Title");
+        _titleTmp = titleT != null ? titleT.GetComponent<TextMeshPro>() : null;
+        if (_titleTmp == null)
+            Log.LogWarning("Notepad title text was not found in the bundle.");
         SetSortingOrderRecursively(_panelInstance.transform, PanelSortingOrder);
         ApplyOutlinesRecursively(_panelInstance.transform);
         var template = HudManager.Instance?.Chat?.freeChatField?.textArea;
