@@ -1,10 +1,7 @@
 using System;
-using System.Collections.Generic;
 using System.Reflection;
 using BepInEx.Logging;
-using HarmonyLib;
 using MiraAPI.Modifiers;
-using UnityEngine;
 
 namespace NotePadMod.Compatibility;
 
@@ -15,11 +12,10 @@ public static class JottingIntegration
     private static MethodInfo? _createMethod;
     private static MethodInfo? _beginMethod;
     private static MethodInfo? _closeMethod;
-    private static readonly List<(Renderer Renderer, bool WasEnabled)> HiddenRenderers = new();
 
     public static bool IsAvailable => _createMethod != null && _beginMethod != null && _closeMethod != null;
 
-    public static void CacheTypes(Assembly touAssembly, Harmony harmony)
+    public static void CacheTypes(Assembly touAssembly)
     {
         var jotMenuType = touAssembly.GetType("TownOfUs.Modules.Components.GuesserMenu");
 
@@ -57,9 +53,6 @@ public static class JottingIntegration
         }
         else
         {
-            harmony.Patch(
-                _closeMethod,
-                postfix: new HarmonyMethod(typeof(JotMenuMeetingVisibilityPatch).GetMethod(nameof(JotMenuMeetingVisibilityPatch.Postfix))!));
             Log.LogInfo("JotMenu.Create/Begin/Close successfully hooked.");
         }
     }
@@ -108,7 +101,6 @@ public static class JottingIntegration
             }
             finally
             {
-                RestoreMeetingPlayerAreas();
                 CloseMenu(menuObj);
             }
         }
@@ -118,44 +110,12 @@ public static class JottingIntegration
             _beginMethod!.Invoke(
                 menuObj,
                 new object?[] { roleMatch, (Action<RoleBehaviour>)WrappedClick, null, null });
-            HideMeetingPlayerAreas();
         }
         catch (Exception ex)
         {
             Log.LogError($"JotMenu.Begin() threw: {ex.InnerException ?? ex}");
             CloseMenu(menuObj);
         }
-    }
-
-    private static void HideMeetingPlayerAreas()
-    {
-        RestoreMeetingPlayerAreas();
-        if (MeetingHud.Instance == null) return;
-
-        foreach (var playerVoteArea in MeetingHud.Instance.playerStates)
-        {
-            if (playerVoteArea == null) continue;
-            if (playerVoteArea.Buttons == null) continue;
-
-            var buttonsTransform = playerVoteArea.Buttons.transform;
-
-            foreach (var renderer in playerVoteArea.GetComponentsInChildren<Renderer>(true))
-            {
-                if (renderer.transform.IsChildOf(buttonsTransform)) continue;
-
-                HiddenRenderers.Add((renderer, renderer.enabled));
-                renderer.enabled = false;
-            }
-        }
-    }
-
-    internal static void RestoreMeetingPlayerAreas()
-    {
-        foreach (var (renderer, wasEnabled) in HiddenRenderers)
-        {
-            if (renderer != null) renderer.enabled = wasEnabled;
-        }
-        HiddenRenderers.Clear();
     }
 
     private static void CloseMenu(object menuObj)
@@ -168,14 +128,5 @@ public static class JottingIntegration
         {
             Log.LogError($"JotMenu.Close() threw: {ex.InnerException ?? ex}");
         }
-    }
-}
-
-public static class JotMenuMeetingVisibilityPatch
-{
-    [HarmonyPostfix]
-    public static void Postfix()
-    {
-        JottingIntegration.RestoreMeetingPlayerAreas();
     }
 }
