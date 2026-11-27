@@ -12,10 +12,6 @@
     <AssemblyName Condition="'$(GamePlatform)' == 'Android'">NotePadMod-Android</AssemblyName>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(GITHUB_ACTIONS)' != 'true'">
-    <AmongUsDir>/Users/neiljain/Library/Application Support/CrossOver/Bottles/Mainly/drive_c/Program Files (x86)/Steam/steamapps/common/Among Us copy</AmongUsDir>
-  </PropertyGroup>
-
   <!-- Lokala referenser -->
   <ItemGroup>
   <PackageReference Include="TownOfUsMira" Version="1.7.9-beta1" />
