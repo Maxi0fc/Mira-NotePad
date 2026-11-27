@@ -1,4 +1,4 @@
-<img width="2172" height="381" alt="ChatGPT Image Sep 13, 2026, 07_55_46 PM" src="https://github.com/user-attachments/assets/142281aa-96c1-4eef-b7e9-054276e38959" />
+<img width="2172" height="381" src="https://github.com/user-attachments/assets/142281aa-96c1-4eef-b7e9-054276e38959" />
 
 An in-game notepad for [MiraAPI](https://github.com/All-Of-Us-Mods/MiraAPI) and its Mods, with support for more heavy integration with other MiraAPI mods.  ![GitHub Downloads (all assets, all releases)](https://img.shields.io/github/downloads/Maxi0fc/Mira-Notepad/total)
 
