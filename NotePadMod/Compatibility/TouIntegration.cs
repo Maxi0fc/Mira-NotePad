@@ -8,6 +8,7 @@ using BepInEx.Logging;
 using BepInEx.Unity.IL2CPP;
 using HarmonyLib;
 using MiraAPI.Modifiers;
+using MiraAPI.Roles;
 using NotePadMod.Patches;
 using UnityEngine;
 
@@ -16,6 +17,9 @@ namespace NotePadMod.Compatibility;
 public static class TouIntegration
 {
     private static readonly ManualLogSource Log = BepInEx.Logging.Logger.CreateLogSource("TouIntegration");
+    private static readonly Regex FullRoleWikiLinkRegex = new(
+        @"#full(?:namespace|name)-(?<roleKey>[\w-]+)",
+        RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
     public static bool IsTouPresent { get; private set; }
 
@@ -24,6 +28,7 @@ public static class TouIntegration
     private static MethodInfo? _getParsedMethod;
     private static MethodInfo? _getMethod;
     private static MethodInfo? _getModifierColourMethod;
+    private static MethodInfo? _getReliableRoleHyperlinkMethod;
     private static Func<object, UnityEngine.Color>? _getModifierColourFunc;
     private static Type? _baseRevealModifierType;
     private static PropertyInfo? _revealVisibleProp;
@@ -111,6 +116,12 @@ public static class TouIntegration
         if (miscUtilsType != null)
         {
             _getModifierColourMethod = miscUtilsType.GetMethod("GetModifierColour", BindingFlags.Public | BindingFlags.Static);
+            _getReliableRoleHyperlinkMethod = miscUtilsType.GetMethod(
+                "GetReliableHyperlinkText",
+                BindingFlags.Public | BindingFlags.Static,
+                null,
+                new[] { typeof(RoleBehaviour) },
+                null);
             if (_getModifierColourMethod != null)
             {
                 _getModifierColourFunc = mod => (UnityEngine.Color)_getModifierColourMethod.Invoke(null, new[] { mod })!;
@@ -222,6 +233,50 @@ public static class TouIntegration
             catch { }
         }
         return fallback;
+    }
+
+    public static string TranslateRoleWikiLinks(string text)
+    {
+        if (string.IsNullOrEmpty(text) ||
+            _getReliableRoleHyperlinkMethod == null ||
+            RoleManager.Instance?.AllRoles == null)
+        {
+            return text;
+        }
+
+        return FullRoleWikiLinkRegex.Replace(text, match =>
+        {
+            var roleKey = match.Groups["roleKey"].Value;
+            foreach (var role in RoleManager.Instance.AllRoles)
+            {
+                if (role == null) continue;
+
+                string? generatedLink;
+                try
+                {
+                    generatedLink = _getReliableRoleHyperlinkMethod.Invoke(null, new object?[] { role }) as string;
+                }
+                catch (Exception ex)
+                {
+                    Log.LogWarning($"Failed to resolve role wiki link '{match.Value}': {ex.InnerException ?? ex}");
+                    return match.Value;
+                }
+
+                var generatedMatch = FullRoleWikiLinkRegex.Match(generatedLink ?? string.Empty);
+                if (!generatedMatch.Success ||
+                    !string.Equals(generatedMatch.Groups["roleKey"].Value, roleKey, StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                return role is ICustomRole customRole
+                    ? customRole.RoleName
+                    : TranslationController.Instance?.GetString(role.StringName) ?? role.Role.ToString();
+            }
+
+            Log.LogWarning($"No role was found for wiki link '{match.Value}'.");
+            return match.Value;
+        });
     }
 
     public static UnityEngine.Color? GetModifierColour(object modifier)

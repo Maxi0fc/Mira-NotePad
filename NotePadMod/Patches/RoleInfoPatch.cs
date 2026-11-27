@@ -134,7 +134,7 @@ public static class RoleInfoPatch
         if (EmptyResultTexts.Contains(plainMessage)) return;
         if (EmptyResultTemplates.Any(template => template.IsMatch(plainMessage))) return;
 
-        NotePadWindow.AppendRoleInfoEntry(message);
+        NotePadWindow.AppendRoleInfoEntry(TouIntegration.TranslateRoleWikiLinks(message));
         Log.LogInfo($"Added whitelisted role info to Notepad: {plainTitle}.");
     }
 
