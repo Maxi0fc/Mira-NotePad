@@ -25,20 +25,34 @@ jobs:
         with:
           dotnet-version: '6.0.x'
 
-      - name: Restore NuGet packages
-        run: dotnet restore NotePadMod/NotePadMod.csproj
+      - name: Restore Steam dependencies
+        run: dotnet restore NotePadMod/NotePadMod.csproj -p:GamePlatform=Steam
 
-      - name: Build
-        run: dotnet build NotePadMod/NotePadMod.csproj --configuration Release --no-restore
+      - name: Build Steam DLL
+        run: dotnet build NotePadMod/NotePadMod.csproj --configuration Release -p:GamePlatform=Steam --no-restore
 
-      - name: Upload DLL as artifact
+      - name: Upload Steam DLL
         uses: actions/upload-artifact@v4
         with:
           name: NotePadMod
           path: NotePadMod/bin/Release/net6.0/NotePadMod.dll
 
+      - name: Restore Android dependencies
+        run: dotnet restore NotePadMod/NotePadMod.csproj -p:GamePlatform=Android
+
+      - name: Build Android DLL
+        run: dotnet build NotePadMod/NotePadMod.csproj --configuration Release -p:GamePlatform=Android --no-restore
+
+      - name: Upload Android DLL
+        uses: actions/upload-artifact@v4
+        with:
+          name: NotePadMod-Android
+          path: NotePadMod/bin/Release/net6.0/NotePadMod-Android.dll
+
       - name: Release
         if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'release'
         uses: softprops/action-gh-release@v2
         with:
-          files: NotePadMod/bin/Release/net6.0/NotePadMod.dll
+          files: |
+            NotePadMod/bin/Release/net6.0/NotePadMod.dll
+            NotePadMod/bin/Release/net6.0/NotePadMod-Android.dll

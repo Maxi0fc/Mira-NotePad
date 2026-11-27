@@ -9,6 +9,7 @@
     <NoWarn>$(NoWarn);CS0436;CS0618</NoWarn>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <GamePlatform Condition="'$(GamePlatform)' == ''">Steam</GamePlatform>
+    <AssemblyName Condition="'$(GamePlatform)' == 'Android'">NotePadMod-Android</AssemblyName>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(GITHUB_ACTIONS)' != 'true'">
@@ -33,8 +34,8 @@
     <EmbeddedResource Include="Resources\general_tab.png" />
     <EmbeddedResource Include="Resources\roles_tab.png" />
     <EmbeddedResource Include="Resources\DeleteInfoButton.png" />
-    <EmbeddedResource Include="Resources\notepad-mod-win.bundle" />
-    <EmbeddedResource Include="Resources\notepad-mod-android.bundle" Condition="Exists('Resources\notepad-mod-android.bundle')" />
+    <EmbeddedResource Include="Resources\notepad-mod-win.bundle" Condition="'$(GamePlatform)' != 'Android'" />
+    <EmbeddedResource Include="Resources\notepad-mod-android.bundle" Condition="'$(GamePlatform)' == 'Android'" />
     <EmbeddedResource Include="modinfo.json" />
   </ItemGroup>
     <Target Name="CopyDllToAnotherFolder" AfterTargets="Build">
