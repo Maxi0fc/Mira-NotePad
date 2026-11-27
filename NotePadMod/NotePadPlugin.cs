@@ -20,6 +20,7 @@ public class NotePadPlugin : BasePlugin, IMiraPlugin
 
     public static NotePadLocalSettings Settings { get; private set; } = null!;
     public string OptionsTitleText => "Notepad";
+    public bool DisplayOnOptionsMenu => false;
     public ConfigFile GetConfigFile() => Config;
 
     public override void Load()
