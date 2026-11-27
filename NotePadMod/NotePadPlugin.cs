@@ -19,7 +19,7 @@ public class NotePadPlugin : BasePlugin, IMiraPlugin
     public static NotePadPlugin Instance { get; private set; } = null!;
 
     public static NotePadLocalSettings Settings { get; private set; } = null!;
-    public string OptionsTitleText => "Notepa";
+    public string OptionsTitleText => "Notepad";
     public bool DisplayOnOptionsMenu => false;
     public ConfigFile GetConfigFile() => Config;
 
