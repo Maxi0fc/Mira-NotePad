@@ -151,6 +151,19 @@ jobs:
             -p:GamePlatform=Steam `
             --no-restore
 
+      - name: Preserve Steam DLL
+        shell: pwsh
+        run: |
+          $projectName = "${{ steps.project.outputs.name }}"
+          $outputDirectory = Join-Path "${{ steps.project.outputs.directory }}" "bin\Release\net6.0"
+          $steamDll = Join-Path $outputDirectory "$projectName.dll"
+          if (-not (Test-Path $steamDll)) {
+            Write-Error "Could not find the Steam DLL at $steamDll."
+            exit 1
+          }
+
+          Copy-Item -Path $steamDll -Destination (Join-Path $env:RUNNER_TEMP "$projectName.dll") -ErrorAction Stop
+
       - name: Restore Android dependencies
         run: dotnet restore "${{ steps.project.outputs.path }}" -p:GamePlatform=Android
 
@@ -167,7 +180,7 @@ jobs:
         run: |
           $projectName = "${{ steps.project.outputs.name }}"
           $outputDirectory = Join-Path "${{ steps.project.outputs.directory }}" "bin\Release\net6.0"
-          $steamDll = Join-Path $outputDirectory "$projectName.dll"
+          $steamDll = Join-Path $env:RUNNER_TEMP "$projectName.dll"
           $androidDll = Join-Path $outputDirectory "$projectName-Android.dll"
 
           if (-not (Test-Path $steamDll)) {
