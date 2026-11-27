@@ -20,13 +20,14 @@ public class NotePadPlugin : BasePlugin, IMiraPlugin
 
     public static NotePadLocalSettings Settings { get; private set; } = null!;
     public string OptionsTitleText => "Notepad";
+    public bool DisplayOnOptionsMenu => false;
     public ConfigFile GetConfigFile() => Config;
 
     public override void Load()
     {
         Instance = this;
         Settings = new NotePadLocalSettings(Config);
-        ReactorCredits.Register("NotePad", "1.4.5", false, ReactorCredits.AlwaysShow);
+        ReactorCredits.Register("NotePad", "1.4.6", false, ReactorCredits.AlwaysShow);
 
         var harmony = new Harmony("maxi.notepad");
         harmony.PatchAll();
