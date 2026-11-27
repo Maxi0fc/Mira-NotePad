@@ -141,39 +141,50 @@ jobs:
           $body >> $env:GITHUB_OUTPUT
           "$bodyDelimiter" >> $env:GITHUB_OUTPUT
 
-      - name: Restore dependencies
-        run: dotnet restore "${{ steps.project.outputs.path }}"
+      - name: Restore Steam dependencies
+        run: dotnet restore "${{ steps.project.outputs.path }}" -p:GamePlatform=Steam
 
-      - name: Build DLL
+      - name: Build Steam DLL
         run: |
           dotnet build "${{ steps.project.outputs.path }}" `
             --configuration Release `
+            -p:GamePlatform=Steam `
             --no-restore
 
-      - name: Find built DLL
+      - name: Restore Android dependencies
+        run: dotnet restore "${{ steps.project.outputs.path }}" -p:GamePlatform=Android
+
+      - name: Build Android DLL
+        run: |
+          dotnet build "${{ steps.project.outputs.path }}" `
+            --configuration Release `
+            -p:GamePlatform=Android `
+            --no-restore
+
+      - name: Find built DLLs
         id: dll
         shell: pwsh
         run: |
           $projectName = "${{ steps.project.outputs.name }}"
+          $outputDirectory = Join-Path "${{ steps.project.outputs.directory }}" "bin\Release\net6.0"
+          $steamDll = Join-Path $outputDirectory "$projectName.dll"
+          $androidDll = Join-Path $outputDirectory "$projectName-Android.dll"
 
-          $dll = Get-ChildItem -Path . `
-            -Filter "$projectName.dll" `
-            -Recurse `
-            -File |
-            Where-Object {
-              $_.FullName -match "\\bin\\Release\\"
-            } |
-            Select-Object -First 1
-
-          if ($null -eq $dll) {
-            Write-Error "Could not find $projectName.dll in the Release build output."
+          if (-not (Test-Path $steamDll)) {
+            Write-Error "Could not find the Steam DLL at $steamDll."
             exit 1
           }
 
-          Write-Host "Found DLL:"
-          Write-Host $dll.FullName
+          if (-not (Test-Path $androidDll)) {
+            Write-Error "Could not find the Android DLL at $androidDll."
+            exit 1
+          }
 
-          "path=$($dll.FullName)" >> $env:GITHUB_OUTPUT
+          Write-Host "Found Steam DLL: $steamDll"
+          Write-Host "Found Android DLL: $androidDll"
+
+          "steam_path=$steamDll" >> $env:GITHUB_OUTPUT
+          "android_path=$androidDll" >> $env:GITHUB_OUTPUT
 
       - name: Create Official Latest Release
         env:
@@ -183,13 +194,15 @@ jobs:
           RELEASE_BODY: ${{ steps.pr.outputs.body }}
           REPOSITORY: ${{ github.repository }}
           SHA: ${{ github.sha }}
-          DLL_PATH: ${{ steps.dll.outputs.path }}
+          STEAM_DLL_PATH: ${{ steps.dll.outputs.steam_path }}
+          ANDROID_DLL_PATH: ${{ steps.dll.outputs.android_path }}
         shell: pwsh
         run: |
           $tag = "v$($env:VERSION)"
 
           gh release create $tag `
-            "$env:DLL_PATH" `
+            "$env:STEAM_DLL_PATH" `
+            "$env:ANDROID_DLL_PATH" `
             --repo $env:REPOSITORY `
             --target $env:SHA `
             --title $env:RELEASE_TITLE `
